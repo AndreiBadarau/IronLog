@@ -1,68 +1,51 @@
-import React, { useState } from "react";
-import { Button, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React from 'react';
+import { Image, StyleSheet, Text, View } from 'react-native';
+const Logo = require('../assets/images/icon.png');
 
-export default function Index() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
+const Home = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{isLogin ? "Login" : "Register"}</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      <Button
-        title={isLogin ? "Login" : "Register"}
-        onPress={() => {
-          // TODO: Connect to Firebase Auth here
-        }}
-      />
-      <TouchableOpacity onPress={() => setIsLogin(!isLogin)}>
-        <Text style={styles.switchText}>
-          {isLogin ? "Don't have an account? Register" : "Already have an account? Login"}
-        </Text>
-      </TouchableOpacity>
+
+      <Image source={Logo} style={styles.logo}/> 
+
+
+      <Text style={styles.title}>Home</Text>
+
+      <Text style={{marginTop: 10, marginBottom: 30}}>
+        Welcome to the Home Screen! </Text>
+
+      <View style={styles.card}>
+        <Text>This is a simple React Native app.</Text>
+      </View>
+
     </View>
-  );
+
+  
+  )
+
 }
+
+export default Home
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-    backgroundColor: "#fff",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 32,
-    marginBottom: 24,
-    fontWeight: "bold",
+    fontSize: 20,
+    fontWeight: 'bold',
   },
-  input: {
-    width: "100%",
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
+  card: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    boxShadow: '4px 4px rgba(0,0,0,0.1)',
   },
-  switchText: {
-    marginTop: 16,
-    color: "#007AFF",
-    textAlign: "center",
-  },
-});
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
+  }
+})
