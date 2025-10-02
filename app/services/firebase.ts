@@ -12,5 +12,6 @@ export function getFirebaseApp() {
     // @ts-ignore
     app = initializeApp();
   }
+  {}
   return app;
 }
