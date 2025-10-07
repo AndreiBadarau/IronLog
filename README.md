@@ -4,7 +4,7 @@ A modern React Native (Expo) fitness application designed to help users track th
 
 ## Overview 📱
 
-The Gym Tracker App is a complete gym companion built for fitness enthusiasts.
+The IronLog App is a complete gym companion built for fitness enthusiasts.
 It allows users to log workouts, calculate strength metrics, and visualize their fitness journey.
 All data is securely synced with Firebase, ensuring smooth cross-device use (planned for future iOS support).
 
