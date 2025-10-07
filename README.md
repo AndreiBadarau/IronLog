@@ -1,50 +1,69 @@
-# Welcome to your Expo app 👋
+# IronLog 🏋️‍♂️ - in development
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A modern React Native (Expo) fitness application designed to help users track their workouts, calculate their one-rep max, and monitor their progress over time.
 
-## Get started
+## Overview 📱
 
-1. Install dependencies
+The Gym Tracker App is a complete gym companion built for fitness enthusiasts.
+It allows users to log workouts, calculate strength metrics, and visualize their fitness journey.
+All data is securely synced with Firebase, ensuring smooth cross-device use (planned for future iOS support).
 
-   ```bash
-   npm install
-   ```
+## Features 🚀
 
-2. Start the app
+### Authentication 🔐
 
-   ```bash
-   npx expo start
-   ```
+- Secure Login / Register system for users.  
+- Authentication powered by **Firebase Auth**.
 
-In the output, you'll find options to open the app in a
+### Workout Log 🏋️
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Users can create and log workouts.  
+- Each workout includes:  
+      - Exercise name  
+      - Sets, reps, and weights  
+- Exercises are stored locally, and users can add new exercises anytime.  
+- Completed workouts are uploaded to Firestore under the user’s unique ID.  
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### 1 Rep Max Calculator 💪
 
-## Get a fresh project
+- Calculate your **1 Rep Max (1RM)** for:
+     - Squat
+     - Bench Press
+     - Deadlift
+     - Muscle-Up
+     - Dip
+     - Pull-Up
+- Uses:
+     - **Kilograms (Kg)** + **number of reps** for traditional lifts.
+     - **Body weight** + **added weight** + **number of reps** for bodyweight movements.
+- Future feature:
+     Generate an **interactive Excel-style chart** plotting 1RMs, with KG on the X-axis, Reps on the Y-axis, and color-coded performance zones (from warm red to “red-hot fail”).
 
-When you're ready, run:
+  ### Weight Log
 
-```bash
-npm run reset-project
-```
+  - Track your **body weight** over time.
+  - Automatically generate a **progress chart** to visualize trends and milestones.
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Tech Stack 🧠
 
-## Learn more
+| Category                   | Technology                                       |
+| -------------------------- | ------------------------------------------------ |
+| **Frontend**               | React Native (Expo)                              |
+| **Backend**                | Firebase (Auth, Firestore, Storage)              |
+| **Data Storage**           | Local Storage + Firestore Cloud Sync             |
+| **Charts & Visualization** | Planned support using Recharts or Victory Native |
+| **Platform**               | Android (initial), iOS (future)                  |
 
-To learn more about developing your project with Expo, look at the following resources:
+## Roadmap 📈
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- User Authentication ✅
+- Workout Tracker (Local + Firestore Sync) ❎
+- 1RM Calculator ❎
+- Weight Log Chart ❎
+- 1RM Chart Visualization ❎
+- Cloud Storage for Exercise Library ❎
+- iOS Support ❎
 
-## Join the community
+## Vision 💡
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The long-term goal is to make **IronLog** an all-in-one fitness app — combining workout tracking, progress visualization, and strength analytics with a sleek, simple design.
