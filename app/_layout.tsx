@@ -1,7 +1,9 @@
 // ../../_layout.tsx
 import { Slot, useRouter, useSegments } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "../src/providers/AuthProvider";
 
 function AuthGate() {
@@ -18,7 +20,7 @@ function AuthGate() {
       router.replace("/(auth)/login");
     } else if (user && inAuthGroup) {
       // If user is signed in and in auth group, redirect to home
-      router.replace("/(drawer)/home");
+      router.replace("/");
     }
   }, [user, initialization, segments, router]);
 
@@ -37,7 +39,10 @@ function AuthGate() {
 export default function RootLayout() {
   return (
     <AuthProvider>
+      <SafeAreaProvider style={{ flex: 1 }}>
+        <StatusBar style="light" translucent backgroundColor="transparent"/>
       <AuthGate />
+      </SafeAreaProvider>
     </AuthProvider>
   );
 }

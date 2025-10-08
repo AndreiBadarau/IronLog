@@ -8,6 +8,7 @@ import {
   initializeAuth,
 } from "firebase/auth";
 import { Firestore, initializeFirestore } from "firebase/firestore";
+import { FirebaseStorage, getStorage } from "firebase/storage";
 import { Platform } from "react-native";
 
 const firebaseConfig = {
@@ -28,6 +29,8 @@ declare global {
   var __FIRESTORE__: Firestore | undefined;
    
   var __FIREBASE_AUTH__: Auth | undefined;
+
+  var __FIREBASE_STORAGE__: FirebaseStorage | undefined;
 }
 
 // App (create once)
@@ -42,6 +45,10 @@ export const db: Firestore =
     experimentalAutoDetectLongPolling: true, // keep forced for reliability
   });
 if (!globalThis.__FIRESTORE__) globalThis.__FIRESTORE__ = db;
+
+export const storage: FirebaseStorage =
+  globalThis.__FIREBASE_STORAGE__ ?? getStorage(app);
+if (!globalThis.__FIREBASE_STORAGE__) globalThis.__FIREBASE_STORAGE__ = storage;
 
 // Auth (persist to AsyncStorage on native; normal getAuth on web)
 let _auth: Auth;

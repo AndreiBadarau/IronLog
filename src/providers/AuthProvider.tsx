@@ -1,21 +1,21 @@
 // /src/providers/AuthProvider.tsx
 import { useRouter, useSegments } from "expo-router";
 import {
-    createUserWithEmailAndPassword,
-    onAuthStateChanged,
-    signInWithEmailAndPassword,
-    signOut,
-    updateProfile,
-    User,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+  User,
 } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import React, {
-    createContext,
-    PropsWithChildren,
-    useContext,
-    useEffect,
-    useMemo,
-    useState,
+  createContext,
+  PropsWithChildren,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from "react";
 import { auth, db } from "../../src/config/firebaseConfig";
 
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (!user && !inAuthGroup) {
       router.replace("/(auth)/login");
     } else if (user && inAuthGroup) {
-      router.replace("/(tabs)/home");
+      router.replace("/(drawer)/workouts");
     }
   }, [user, initialization, segments, router]);
 
