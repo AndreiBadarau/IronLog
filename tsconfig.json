@@ -1,10 +1,14 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
+    "baseUrl": ".",
     "strict": true,
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@firebase/auth": [
+        "./node_modules/firebase/auth/dist/index.esm.js"
       ]
     }
   },
@@ -13,5 +17,8 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
+, "src/config/firebaseConfig.ts"  ],
+  "extends": [
+    "expo/tsconfig.base"
   ]
 }
