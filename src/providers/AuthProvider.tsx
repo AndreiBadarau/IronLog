@@ -29,6 +29,7 @@ type Ctx = {
   ) => Promise<User | null>;
   signIn: (email: string, password: string) => Promise<User | null>;
   logOut: () => Promise<void>;
+  reloadUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<Ctx>({
@@ -42,6 +43,9 @@ const AuthContext = createContext<Ctx>({
     throw new Error("Auth not ready");
   },
   logOut: async () => {
+    throw new Error("Auth not ready");
+  },
+  reloadUser: async () => {
     throw new Error("Auth not ready");
   },
 });
@@ -114,8 +118,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
     await signOut(auth);
   }
 
+  async function reloadUser() {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      setUser(auth.currentUser);
+    }
+  }
+
   const value = useMemo(
-    () => ({ user, initialization, signUp, signIn, logOut }),
+    () => ({ user, initialization, signUp, signIn, logOut, reloadUser }),
     [user, initialization]
   );
 
