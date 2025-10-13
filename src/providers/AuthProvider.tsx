@@ -1,8 +1,13 @@
 // /src/providers/AuthProvider.tsx
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { useRouter, useSegments } from "expo-router";
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInAnonymously,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
@@ -28,6 +33,9 @@ type Ctx = {
     displayName: string
   ) => Promise<User | null>;
   signIn: (email: string, password: string) => Promise<User | null>;
+  signInAsGuest: () => Promise<User | null>;
+  signInWithGoogle: () => Promise<User | null>;
+  resetPassword: (email: string) => Promise<boolean>;
   logOut: () => Promise<void>;
   reloadUser: () => Promise<void>;
 };
@@ -40,6 +48,15 @@ const AuthContext = createContext<Ctx>({
     throw new Error("Auth not ready");
   },
   signIn: async () => {
+    throw new Error("Auth not ready");
+  },
+  signInAsGuest: async () => {
+    throw new Error("Auth not ready");
+  },
+  signInWithGoogle: async () => {
+    throw new Error("Auth not ready");
+  },
+  resetPassword: async () => {
     throw new Error("Auth not ready");
   },
   logOut: async () => {
@@ -55,6 +72,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [initialization, setInitialization] = useState(true);
   const segments = useSegments();
   const router = useRouter();
+
+  // Configure Google Sign-In
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: "392332696453-23srgojfjs1stniomeu7ufsvii4vtl14.apps.googleusercontent.com",
+    });
+  }, []);
 
   // Keep auth state in sync with firebase
   useEffect(() => {
@@ -114,6 +138,56 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
   }
 
+  async function signInAsGuest(): Promise<User | null> {
+    try {
+      const userCredential = await signInAnonymously(auth);
+      return userCredential.user;
+    } catch {
+      return null;
+    }
+  }
+
+  async function signInWithGoogle(): Promise<User | null> {
+    try {
+      // Check if your device supports Google Play
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      
+      // Get the users ID token
+      const signInResult = await GoogleSignin.signIn();
+      const idToken = signInResult.data?.idToken;
+      
+      // Create a Google credential with the token
+      const googleCredential = GoogleAuthProvider.credential(idToken);
+      
+      // Sign-in the user with the credential
+      const userCredential = await signInWithCredential(auth, googleCredential);
+      
+      // Save user data to Firestore
+      if (userCredential.user) {
+        const { displayName, email, uid } = userCredential.user;
+        await setDoc(doc(db, "users", uid), {
+          displayName: displayName || "Google User",
+          email: email || "",
+          createdAt: serverTimestamp(),
+        }, { merge: true });
+      }
+      
+      return userCredential.user;
+    } catch (error) {
+      console.error("Google Sign-In Error:", error);
+      return null;
+    }
+  }
+
+  async function resetPassword(email: string): Promise<boolean> {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function logOut() {
     await signOut(auth);
   }
@@ -126,7 +200,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }
 
   const value = useMemo(
-    () => ({ user, initialization, signUp, signIn, logOut, reloadUser }),
+    () => ({ user, initialization, signUp, signIn, signInAsGuest, signInWithGoogle, resetPassword, logOut, reloadUser }),
     [user, initialization]
   );
 

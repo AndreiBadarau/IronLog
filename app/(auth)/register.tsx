@@ -1,190 +1,381 @@
-// ../../(app)/register.tsx
+import Screen from "@/src/components/Screen";
 import { useAuth } from "@/src/providers/AuthProvider";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { Link } from "expo-router";
-import { useState } from "react";
-import { Button, StyleSheet, Text, View } from "react-native";
-import { TextInput } from "react-native-paper";
+import React, { useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+
+const BG = require("../../assets/images/background.jpeg");
 
 export default function RegisterScreen() {
-  const { signUp } = useAuth();
+  const { signUp, signInAsGuest, signInWithGoogle } = useAuth();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [secure, setSecure] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
-  const [showPwd, setShowPwd] = useState(false);
-  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+
+  // Refs for input navigation
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmRef = useRef<TextInput>(null);
+
+  // Validation functions
+  const isValidEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const isValidPassword = (password: string) => {
+    // At least 6 characters, 1 uppercase, 1 number, 1 special character
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+    return passwordRegex.test(password);
+  };
+
+  const canSubmit = useMemo(() => {
+    const passwordsMatch = password === confirm && confirm !== "";
+    return (
+      name.trim() !== "" &&
+      isValidEmail(email) &&
+      isValidPassword(password) &&
+      passwordsMatch
+    );
+  }, [name, email, password, confirm]);
 
   async function onRegister() {
     setMsg("");
+
+    // Detailed validation messages
+    if (name.trim() === "") {
+      setMsg("Please enter your name or nickname.");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setMsg("Please enter a valid email address.");
+      return;
+    }
+    if (!isValidPassword(password)) {
+      setMsg(
+        "Password must be at least 6 characters with 1 uppercase, 1 number, and 1 special character."
+      );
+      return;
+    }
+    if (password !== confirm) {
+      setMsg("Passwords do not match!");
+      return;
+    }
+
+    setLoading(true);
     try {
-      await signUp(email.trim(), password, displayName);
-      // onAuthStateChanged will fire and gate will redirect to /(tabs)/home
-    } catch (e: any) {
-      setMsg(e?.message ?? String(e));
+      const user = await signUp(email, password, name);
+      if (!user) setMsg("Registration failed");
+      else Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : String(e));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onGuestSignIn() {
+    setMsg("");
+    setLoading(true);
+    try {
+      const user = await signInAsGuest();
+      if (!user) setMsg("Failed to sign in as guest");
+      else Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : String(e));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onGoogleSignIn() {
+    setMsg("");
+    setLoading(true);
+    try {
+      const user = await signInWithGoogle();
+      if (!user) setMsg("Failed to sign in with Google");
+      else Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : String(e));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <View style={{ flex: 1, justifyContent: "center", gap: 12, padding: 16 }}>
-      {/* Header */}
-      <Text style={styles.title}>Sign up</Text>
-      <Text style={styles.subtitle}>Create an account to continue!</Text>
+    <View style={{ flex: 1 }}>
+      <Image source={BG} style={styles.bg} resizeMode="cover" />
+      <View style={styles.overlay} />
 
-      {/* Full Name */}
-      <View style={styles.field}>
-        <Text style={styles.label}>Name or Nickname</Text>
-        <TextInput
-          mode="outlined"
-          value={displayName}
-          onChangeText={setDisplayName}
-          placeholder="Name or Nickname"
-          outlineStyle={styles.inputOutline}
-          style={styles.input}
-          left={<TextInput.Icon icon="account" />}
-          autoCapitalize="words"
-          autoComplete="name"
-        />
-      </View>
+      <Screen style={{ backgroundColor: "transparent" }}>
+        <KeyboardAvoidingView
+          behavior={Platform.select({ ios: "padding", android: undefined })}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
+        >
+          <ScrollView
+            contentContainerStyle={styles.container}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text style={styles.title}>Sign Up</Text>
 
-      {/* Email */}
-      <View style={styles.field}>
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          mode="outlined"
-          value={email}
-          onChangeText={setEmail}
-          placeholder="you@example.com"
-          outlineStyle={styles.inputOutline}
-          style={styles.input}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          left={<TextInput.Icon icon="email" />}
-        />
-      </View>
+            <View style={styles.formWrap}>
+              <Text style={styles.label}>Name or Nickname</Text>
+              <TextInput
+                placeholder="Name or Nickname"
+                placeholderTextColor={styles.placeholder.color}
+                value={name}
+                onChangeText={setName}
+                style={styles.input}
+                returnKeyType="next"
+                onSubmitEditing={() => emailRef.current?.focus()}
+                blurOnSubmit={false}
+              />
 
-      {/* Password */}
-      <View style={styles.field}>
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          mode="outlined"
-          value={password}
-          onChangeText={setPassword}
-          placeholder="••••••••"
-          outlineStyle={styles.inputOutline}
-          style={styles.input}
-          left={<TextInput.Icon icon="lock" />}
-          right={
-            <TextInput.Icon
-              icon={showPwd ? "eye-off" : "eye"}
-              onPress={() => setShowPwd((v) => !v)}
-              forceTextInputFocus={false}
-            />
-          }
-          secureTextEntry={!showPwd}
-          autoComplete="password-new"
-        />
-      </View>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                ref={emailRef}
+                placeholder="Email address"
+                placeholderTextColor={styles.placeholder.color}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={styles.input}
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                blurOnSubmit={false}
+              />
+              {email.length > 0 && !isValidEmail(email) && (
+                <Text style={styles.helperText}>
+                  Please enter a valid email address.
+                </Text>
+              )}
 
-      {/* Password */}
-      <View style={styles.field}>
-        <Text style={styles.label}>Confirm Password</Text>
-        <TextInput
-          mode="outlined"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          placeholder="••••••••"
-          outlineStyle={styles.inputOutline}
-          style={styles.input}
-          left={<TextInput.Icon icon="lock" />}
-          right={
-            <TextInput.Icon
-              icon={showConfirmPwd ? "eye-off" : "eye"}
-              onPress={() => setShowConfirmPwd((v) => !v)}
-              forceTextInputFocus={false}
-            />
-          }
-          secureTextEntry={!showConfirmPwd}
-          autoComplete="password-new"
-        />
-      </View>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.passwordRow}>
+                <TextInput
+                  ref={passwordRef}
+                  placeholder="Password"
+                  placeholderTextColor={styles.placeholder.color}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={secure}
+                  style={[styles.input, styles.inputNoPad]}
+                  returnKeyType="next"
+                  onSubmitEditing={() => confirmRef.current?.focus()}
+                  blurOnSubmit={false}
+                />
+                <Pressable
+                  onPress={() => setSecure((s) => !s)}
+                  style={styles.eye}
+                  accessibilityRole="button"
+                >
+                  <Ionicons
+                    name={secure ? "eye-off" : "eye"}
+                    size={18}
+                    color="#c2c2c2ff"
+                  />
+                </Pressable>
+              </View>
+              {password.length > 0 && !isValidPassword(password) && (
+                <Text style={styles.helperText}>
+                  Password must have at least 6 characters, 1 uppercase, 1
+                  number, and 1 special character.
+                </Text>
+              )}
 
-      <Button title="Sign up" onPress={onRegister} />
-      {!!msg && <Text style={{ color: "crimson" }}>{msg}</Text>}
-      <Text>
-        Already have an account? <Link href="/(auth)/login">Log in</Link>
-      </Text>
+              <Text style={styles.label}>Confirm password</Text>
+              <View style={styles.passwordRow}>
+                <TextInput
+                  ref={confirmRef}
+                  placeholder="Confirm password"
+                  placeholderTextColor={styles.placeholder.color}
+                  value={confirm}
+                  onChangeText={setConfirm}
+                  secureTextEntry={secure}
+                  style={[styles.input, styles.inputNoPad]}
+                  returnKeyType="done"
+                  onSubmitEditing={onRegister}
+                />
+                <Pressable
+                  onPress={() => setSecure((s) => !s)}
+                  style={styles.eye}
+                  accessibilityRole="button"
+                >
+                  <Ionicons
+                    name={secure ? "eye-off" : "eye"}
+                    size={18}
+                    color="#c2c2c2ff"
+                  />
+                </Pressable>
+              </View>
+              {confirm.length > 0 && password !== confirm && (
+                <Text style={styles.helperText}>Passwords do not match!</Text>
+              )}
+
+              <Pressable
+                onPress={onRegister}
+                disabled={loading || !canSubmit}
+                style={[
+                  styles.primaryBtn,
+                  (loading || !canSubmit) && styles.disabled,
+                ]}
+                accessibilityRole="button"
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.primaryText}>Signup</Text>
+                )}
+              </Pressable>
+
+              <View style={styles.dividerRow}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>Or sign up with</Text>
+                <View style={styles.divider} />
+              </View>
+
+              <View style={styles.socialRow}>
+                <Pressable 
+                  onPress={onGoogleSignIn} 
+                  disabled={loading} 
+                  style={[styles.socialBtn, loading && styles.disabled]} 
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.socialText}>
+                    <Ionicons name="logo-google" size={20} color="#9e0000ff" />
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={onGuestSignIn}
+                  disabled={loading}
+                  style={[styles.socialBtn, loading && styles.disabled]}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.socialText}>Guest</Text>
+                </Pressable>
+              </View>
+
+              {!!msg && <Text style={styles.feedback}>{msg}</Text>}
+
+              <View style={styles.bottomRow}>
+                <Text style={styles.bottomText}>Already have an account! </Text>
+                <Link href="/(auth)/login">
+                  <Text style={styles.bottomLink}>Sign In</Text>
+                </Link>
+              </View>
+            </View>
+
+            <View style={{ height: 60 }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Screen>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: {
-    padding: 16,
-    backgroundColor: "#2b2b2b", // grey backdrop like your mock
+  placeholder: { color: "#cacacaff" },
+  bg: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
   },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 16,
-    paddingBottom: 28,
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.6)",
   },
-  topRow: {
-    flexDirection: "row",
+  container: {
+    flexGrow: 1,
+    padding: 24,
     alignItems: "center",
-    marginBottom: 4,
+    justifyContent: "flex-start",
   },
   title: {
+    color: "#fff",
     fontSize: 34,
     fontWeight: "700",
-    marginTop: 4,
+    marginTop: 36,
+    marginBottom: 18,
   },
-  subtitle: {
-    color: "#6b7280",
-    marginTop: 6,
-    marginBottom: 16,
-    fontSize: 14,
-  },
-  field: {
-    marginBottom: 14,
-  },
-  label: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginBottom: 6,
-  },
+  formWrap: { width: "100%" },
+  label: { color: "#fff", marginTop: 12, marginBottom: 6 },
   input: {
-    backgroundColor: "#fff",
-  },
-  inputOutline: {
+    backgroundColor: "rgba(180, 180, 180, 0.35)",
     borderRadius: 12,
-  },
-  buttonWrap: {
-    marginTop: 6,
-  },
-  button: {
-    height: 50,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "700",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     fontSize: 16,
+    color: "#ffffffff",
   },
-  footerRow: {
+  passwordRow: { flexDirection: "row", alignItems: "center" },
+  eye: { padding: 8, marginLeft: 8 },
+  inputNoPad: { flex: 1 },
+  primaryBtn: {
+    marginTop: 18,
+    backgroundColor: "#2EA0FF",
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  disabled: { opacity: 0.6 },
+  primaryText: { color: "#fff", fontWeight: "700" },
+  dividerRow: { flexDirection: "row", alignItems: "center", marginTop: 18 },
+  divider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.14)",
+    flex: 1,
+    marginHorizontal: 12,
+  },
+  dividerText: { color: "#fff", fontSize: 13 },
+  socialRow: {
     flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 14,
+    justifyContent: "space-between",
+    marginTop: 12,
   },
-  footerText: {
-    color: "#6b7280",
-    fontSize: 14,
+  socialBtn: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    paddingVertical: 14,
+    paddingHorizontal: 26,
+    borderRadius: 8,
+    marginHorizontal: 6,
+    minWidth: 140,
+    alignItems: "center",
   },
-  loginLink: {
-    color: "#2E65F5",
-    fontWeight: "600",
-  },
+  socialText: { color: "#fff", fontWeight: "700" },
+  feedback: { color: "#ff0000ff", marginTop: 12 },
+  helperText: { color: "#ff0000ff", fontSize: 12, marginTop: 4, marginLeft: 4 },
+  bottomRow: { flexDirection: "row", justifyContent: "center", marginTop: 18 },
+  bottomText: { color: "#fff" },
+  bottomLink: { color: "#2EA0FF", fontWeight: "700" },
 });

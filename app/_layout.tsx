@@ -40,7 +40,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <SafeAreaProvider style={{ flex: 1 }}>
-        <StatusBar style="dark"/>
+        <StatusBar style="light" />
       <AuthGate />
       </SafeAreaProvider>
     </AuthProvider>
