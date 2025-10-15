@@ -57,7 +57,7 @@ All data is securely synced with Firebase, ensuring smooth cross-device use (pla
 ## Roadmap 📈
 
 - User Authentication ✅
-- Workout Tracker (Local + Firestore Sync) ❎
+- Workout Tracker (Local + Firestore Sync) ✅
 - 1RM Calculator ❎
 - Weight Log Chart ❎
 - 1RM Chart Visualization ❎
