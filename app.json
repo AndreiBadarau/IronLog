@@ -44,8 +44,7 @@
           }
         }
       ],
-      "expo-sqlite",
-      ["@react-native-google-signin/google-signin"]
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -57,5 +56,5 @@
         "projectId": "565253bf-7589-47e6-baf3-31f0467735c6"
       }
     }
-  }
+  } 
 }

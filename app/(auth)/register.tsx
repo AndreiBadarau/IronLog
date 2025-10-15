@@ -223,7 +223,7 @@ export default function RegisterScreen() {
                   onPress={() => setSecure((s) => !s)}
                   style={styles.eye}
                   accessibilityRole="button"
-                >
+                > 
                   <Ionicons
                     name={secure ? "eye-off" : "eye"}
                     size={18}

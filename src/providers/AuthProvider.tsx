@@ -96,7 +96,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (!user && !inAuthGroup) {
       router.replace("/(auth)/login");
     } else if (user && inAuthGroup) {
-      router.replace("/(drawer)/workouts");
+      router.replace("/");
     }
   }, [user, initialization, segments, router]);
 

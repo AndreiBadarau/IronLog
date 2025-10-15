@@ -10,7 +10,9 @@
       "@firebase/auth": [
         "./node_modules/firebase/auth/dist/index.esm.js"
       ]
-    }
+    },
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
   "include": [
     "**/*.ts",
@@ -18,7 +20,4 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
 , "src/config/firebaseConfig.ts"  ],
-  "extends": [
-    "expo/tsconfig.base"
-  ]
 }

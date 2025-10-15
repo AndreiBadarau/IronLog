@@ -5,25 +5,28 @@ import AppDrawerContent from "../../src/components/AppDrawerContent";
 
 export default function DrawerLayout() {
   return (
+    
     <Drawer
-      initialRouteName="workouts"
+      initialRouteName="index"
       screenOptions={{
         headerShown: true,
         drawerType: "front",
         // Make the whole drawer one color
-        drawerStyle: { width: 240, backgroundColor: "#111"},
+        drawerStyle: { width: 240, backgroundColor: "transparent"},
         drawerContentStyle: { backgroundColor: "#111"},
-        // Scene background color
-        sceneStyle: { backgroundColor: "#fff" },
+        // Scene background color - this applies to all drawer screens
+        overlayColor: "rgba(0, 0, 0, 0.35)",
+        sceneStyle: { backgroundColor: "#000" },
+        headerTransparent: true,
         // Colors for drawer items
         drawerActiveTintColor: "#fff",
         drawerInactiveTintColor: "#aaa",
-        drawerActiveBackgroundColor: "#333",
-        drawerInactiveBackgroundColor: "#111",
+        drawerActiveBackgroundColor: "rgba(99, 99, 99, 0.75)",
+        drawerInactiveBackgroundColor: "rgba(0, 0, 0, 0.35)",
         // Header style
-        headerStyle: { backgroundColor: "#fff" },
-        headerTitleStyle: { color: "black", fontWeight: "600" },
-        headerTintColor: "black",
+        headerStyle: { backgroundColor: "transparent" },
+        headerTitleStyle: { color: "#fff", fontWeight: "600" },
+        headerTintColor: "#fff",
       }}
       drawerContent={(props) => <AppDrawerContent {...props} />}
       >

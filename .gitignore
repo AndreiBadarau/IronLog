@@ -42,5 +42,4 @@ app-example
 /ios
 /android
 
-src/config/firebaseConfig.js
-google-services.json
+.env.local

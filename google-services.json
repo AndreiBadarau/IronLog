@@ -1,0 +1,69 @@
+{
+  "project_info": {
+    "project_number": "392332696453",
+    "firebase_url": "https://ironlog-fbac6-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "ironlog-fbac6",
+    "storage_bucket": "ironlog-fbac6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:392332696453:android:74d86af724493bb41d42ec",
+        "android_client_info": {
+          "package_name": "com.bdk666.IronLog"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "392332696453-23srgojfjs1stniomeu7ufsvii4vtl14.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZfG75i7j7XTIOUxa2BtVAgj8nJcnYxEk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "392332696453-23srgojfjs1stniomeu7ufsvii4vtl14.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:392332696453:android:ae89f45b76335c7c1d42ec",
+        "android_client_info": {
+          "package_name": "com.ironlog.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "392332696453-23srgojfjs1stniomeu7ufsvii4vtl14.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZfG75i7j7XTIOUxa2BtVAgj8nJcnYxEk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "392332696453-23srgojfjs1stniomeu7ufsvii4vtl14.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

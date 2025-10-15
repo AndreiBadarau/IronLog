@@ -1,13 +1,19 @@
+import BackgroundWrapper from "@/src/components/BackgroundWrapper";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Image, Pressable, Text, View } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 import Screen from "../../src/components/Screen";
 import { useAuth } from "../../src/providers/AuthProvider";
 import { pickAndUploadProfilePhoto } from "../../src/services/profilePhoto";
+
+//TODO: add more profile features (birthdate, etc.)
 
 export default function ProfileScreen() {
   const { user, reloadUser } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const headerHeight = useHeaderHeight();
 
   const changePhoto = async () => {
     try {
@@ -24,6 +30,8 @@ export default function ProfileScreen() {
 
   return (
     <Screen>
+      <BackgroundWrapper>
+        <ScrollView style={{ flex: 1, paddingTop: headerHeight - 25 }}>
       <View style={{ padding: 20, alignItems: "center", gap: 16 }}>
         <Image
           source={
@@ -61,6 +69,8 @@ export default function ProfileScreen() {
           )}
         </Pressable>
       </View>
+      </ScrollView>
+      </BackgroundWrapper>
     </Screen>
   );
 }
