@@ -1,15 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-    addDoc,
-    collection,
-    deleteDoc,
-    doc,
-    enableNetwork,
-    getDocs,
-    orderBy,
-    query,
-    setDoc,
-    where
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  enableNetwork,
+  getDocs,
+  orderBy,
+  query,
+  setDoc,
+  where
 } from 'firebase/firestore';
 import { db } from '../config/firebaseConfig';
 import { Exercise, Workout } from '../types/workout';
@@ -47,7 +47,7 @@ class WorkoutService {
     // Try to sync to Firestore
     try {
       await this.syncWorkoutToFirestore(newWorkout);
-    } catch (error) {
+    } catch {
       console.log('Offline: Workout saved locally, will sync later');
       await this.addToPendingUploads(newWorkout.id);
     }
@@ -70,7 +70,7 @@ class WorkoutService {
     
     try {
       await this.syncWorkoutToFirestore(updatedWorkout);
-    } catch (error) {
+    } catch {
       await this.addToPendingUploads(workoutId);
     }
   }
@@ -92,7 +92,7 @@ class WorkoutService {
     try {
       await deleteDoc(doc(db, 'workouts', workoutId));
       await this.removeWorkoutLocally(workoutId);
-    } catch (error) {
+    } catch {
       await this.addToPendingUploads(workoutId);
     }
   }
@@ -105,7 +105,7 @@ class WorkoutService {
     try {
       await this.syncWorkoutsFromFirestore();
       return await this.getWorkoutsLocally(); // Return updated local data
-    } catch (error) {
+    } catch {
       console.log('Offline: Using cached workouts');
       return localWorkouts.filter(w => !w.isDeleted);
     }
@@ -132,7 +132,7 @@ class WorkoutService {
       await this.cacheExercises(allExercises);
       
       return allExercises;
-    } catch (error) {
+    } catch {
       console.log('Offline: Using cached exercises');
       return cachedExercises;
     }
@@ -164,7 +164,7 @@ class WorkoutService {
       await this.cacheExercises(exercises);
       
       return newExercise;
-    } catch (error) {
+    } catch {
       // If offline, save to pending uploads
       await this.addToPendingExerciseUploads(newExercise);
       return newExercise;
@@ -284,7 +284,7 @@ class WorkoutService {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEYS.EXERCISES);
       return data ? JSON.parse(data) : [];
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -301,7 +301,7 @@ class WorkoutService {
     try {
       const data = await AsyncStorage.getItem(STORAGE_KEYS.PENDING_UPLOADS);
       return data ? JSON.parse(data) : [];
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -347,3 +347,4 @@ class WorkoutService {
 }
 
 export { WorkoutService };
+
