@@ -1,0 +1,1122 @@
+[
+  {
+    "name": "Barbell Back Squat (High Bar)",
+    "popularity": 10,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Back Squat (Low Bar)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Front Squat",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Safety-Bar Squat",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Zercher Squat",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Bench Press (Flat)",
+    "popularity": 10,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Bench Press (Incline)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Bench Press (Decline)",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Close-Grip Barbell Bench Press",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Spoto Press",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Floor Press",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Overhead Press (Standing)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Overhead Press (Seated)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Push Press",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Row (Bent-Over)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Pendlay Row",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Yates Row",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "T-Bar Row",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Landmine Row",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Conventional Deadlift",
+    "popularity": 10,
+    "bw": 0
+  },
+  {
+    "name": "Sumo Deadlift",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Romanian Deadlift (Barbell)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Stiff-Leg Deadlift",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Deficit Deadlift",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Snatch-Grip Deadlift",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Rack Pull",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Good Morning (Barbell)",
+    "popularity": 5,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Hip Thrust",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Glute Bridge",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Lunge (Walking)",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Bulgarian Split Squat",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Step-Up",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Bench Press (Flat)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Bench Press (Incline)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Bench Press (Decline)",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Fly (Flat)",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Fly (Incline)",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Pullover",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Overhead Press (Seated)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Overhead Press (Standing)",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Arnold Press",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Row (Single-Arm)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Row (Chest-Supported)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Romanian Deadlift",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Goblet Squat",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Lunge (Walking)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Reverse Lunge",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Bulgarian Split Squat",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Step-Up",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Lateral Raise",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Front Raise",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Rear Delt Fly",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Upright Row (Dumbbell)",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Hammer Curl",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Alternating Curl",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Incline Dumbbell Curl",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Concentration Curl",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Preacher Curl",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Skullcrusher",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Overhead Triceps Extension",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Triceps Kickback",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Shrug",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Dumbbell Farmer's Walk",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Smith Machine Squat",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Smith Machine Bench Press (Flat)",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Smith Machine Incline Bench Press",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Smith Machine Shoulder Press",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Smith Machine Row",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Smith Machine Calf Raise",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Smith Machine Hip Thrust",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Smith Machine Lunge",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Lat Pulldown (Wide-Grip)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Lat Pulldown (Close-Grip)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Lat Pulldown (Reverse-Grip)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Lat Pulldown (Neutral-Grip)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Lat Pulldown (Single-Arm)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Seated Cable Row (Wide-Grip)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Seated Cable Row (Close-Grip)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Seated Cable Row (Neutral V-Grip)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Seated Cable Row (Single-Arm)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Straight-Arm Pulldown (Cable)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Face Pull (Cable)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Cable Fly (High-to-Low)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Cable Fly (Mid)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Cable Fly (Low-to-High)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Chest Press Machine (Flat)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Chest Press Machine (Incline)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Chest Press Machine (Decline)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Pec Deck (Machine Fly)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Pullover Machine",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Shoulder Press Machine (Seated)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Shoulder Press Machine (Plate-Loaded)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Lateral Raise Machine (Standard)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Lateral Raise Machine (Standing)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Row Machine (Chest-Supported)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Row Machine (Hammer-Strength)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Row Machine (Plate-Loaded)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Assisted Pull-Up Machine",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Assisted Dip Machine",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Cable Lateral Raise",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Cable Rear Delt Fly",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Cable Y-Raise",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Cable Upright Row",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Triceps Pushdown (Cable, Rope)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Triceps Pushdown (Cable, Straight Bar)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Triceps Pushdown (Cable, Reverse Grip)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Overhead Triceps Extension (Cable, Rope)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Overhead Triceps Extension (Cable, EZ-Bar)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Cable Curl (EZ-Bar)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Cable Curl (Rope Hammer)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Cable Curl (Reverse Grip)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Preacher Curl Machine",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Biceps Curl Machine",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Leg Press (45-Degree)",
+    "popularity": 10,
+    "bw": 0
+  },
+  {
+    "name": "Leg Press (Horizontal)",
+    "popularity": 10,
+    "bw": 0
+  },
+  {
+    "name": "Leg Press (Single-Leg)",
+    "popularity": 10,
+    "bw": 0
+  },
+  {
+    "name": "Hack Squat Machine",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Leg Extension (Bilateral)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Leg Extension (Single-Leg)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Leg Curl (Lying)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Leg Curl (Seated)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Leg Curl (Standing Single-Leg)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Calf Raise (Machine, Standing)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Calf Raise (Machine, Seated)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Calf Raise (Machine, Donkey)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Hip Abduction (Machine, Seated)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Hip Abduction (Machine, Standing)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Hip Adduction (Machine)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Belt Squat (Machine)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Reverse Hyperextension (Machine)",
+    "popularity": 5,
+    "bw": 0
+  },
+  {
+    "name": "Glute Drive / Hip Thrust Machine",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Pull-Up (Pronated)",
+    "popularity": 10,
+    "bw": 1
+  },
+  {
+    "name": "Chin-Up (Supinated)",
+    "popularity": 9,
+    "bw": 1
+  },
+  {
+    "name": "Neutral-Grip Pull-Up",
+    "popularity": 9,
+    "bw": 1
+  },
+  {
+    "name": "Wide-Grip Pull-Up",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Muscle-Up (Bar)",
+    "popularity": 7,
+    "bw": 1
+  },
+  {
+    "name": "Muscle-Up (Rings)",
+    "popularity": 6,
+    "bw": 1
+  },
+  {
+    "name": "Dip (Parallel Bars)",
+    "popularity": 9,
+    "bw": 1
+  },
+  {
+    "name": "Ring Dip",
+    "popularity": 7,
+    "bw": 1
+  },
+  {
+    "name": "Push-Up (Standard)",
+    "popularity": 9,
+    "bw": 1
+  },
+  {
+    "name": "Push-Up (Incline)",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Push-Up (Decline)",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Diamond Push-Up",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Wide Push-Up",
+    "popularity": 7,
+    "bw": 1
+  },
+  {
+    "name": "Archer Push-Up",
+    "popularity": 6,
+    "bw": 1
+  },
+  {
+    "name": "Clap Push-Up (Plyo)",
+    "popularity": 6,
+    "bw": 1
+  },
+  {
+    "name": "Handstand Push-Up",
+    "popularity": 6,
+    "bw": 1
+  },
+  {
+    "name": "Pike Push-Up",
+    "popularity": 6,
+    "bw": 1
+  },
+  {
+    "name": "Inverted Row (Bodyweight Row)",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Bodyweight Squat",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Pistol Squat",
+    "popularity": 5,
+    "bw": 1
+  },
+  {
+    "name": "Jump Squat (Bodyweight)",
+    "popularity": 6,
+    "bw": 1
+  },
+  {
+    "name": "Walking Lunge (Bodyweight)",
+    "popularity": 7,
+    "bw": 1
+  },
+  {
+    "name": "Step-Up (Bodyweight)",
+    "popularity": 6,
+    "bw": 1
+  },
+  {
+    "name": "Glute Bridge (Bodyweight)",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Hip Thrust (Bodyweight)",
+    "popularity": 7,
+    "bw": 1
+  },
+  {
+    "name": "Nordic Hamstring Curl",
+    "popularity": 6,
+    "bw": 1
+  },
+  {
+    "name": "GHR (Glute-Ham Raise)",
+    "popularity": 6,
+    "bw": 1
+  },
+  {
+    "name": "Back Extension (Hyperextension)",
+    "popularity": 7,
+    "bw": 1
+  },
+  {
+    "name": "Hanging Knee Raise",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Hanging Leg Raise",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Captain's Chair Leg Raise",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Plank",
+    "popularity": 9,
+    "bw": 1
+  },
+  {
+    "name": "Side Plank",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Sit-Up",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "Crunch",
+    "popularity": 8,
+    "bw": 1
+  },
+  {
+    "name": "V-Up",
+    "popularity": 6,
+    "bw": 1
+  },
+  {
+    "name": "Bicycle Crunch",
+    "popularity": 7,
+    "bw": 1
+  },
+  {
+    "name": "Russian Twist (Bodyweight)",
+    "popularity": 7,
+    "bw": 1
+  },
+  {
+    "name": "Ab Wheel Rollout",
+    "popularity": 7,
+    "bw": 1
+  },
+  {
+    "name": "Mountain Climber",
+    "popularity": 7,
+    "bw": 1
+  },
+  {
+    "name": "Burpee",
+    "popularity": 7,
+    "bw": 1
+  },
+  {
+    "name": "Wall Sit",
+    "popularity": 7,
+    "bw": 1
+  },
+  {
+    "name": "Calf Raise (Bodyweight, Single-Leg)",
+    "popularity": 7,
+    "bw": 1
+  },
+  {
+    "name": "Kettlebell Swing (Two-Hand)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Kettlebell Swing (Single-Arm)",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Kettlebell Clean",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Kettlebell Snatch",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Kettlebell Goblet Squat",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Kettlebell Deadlift",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Turkish Get-Up (Kettlebell)",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Kettlebell Press",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Kettlebell Row",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Power Clean",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Hang Power Clean",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Clean & Jerk",
+    "popularity": 5,
+    "bw": 0
+  },
+  {
+    "name": "Snatch",
+    "popularity": 5,
+    "bw": 0
+  },
+  {
+    "name": "Power Snatch",
+    "popularity": 5,
+    "bw": 0
+  },
+  {
+    "name": "Cable Pallof Press",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Cable Woodchop (High-to-Low)",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Cable Woodchop (Low-to-High)",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Reverse Fly (Machine)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Rear Delt Row (Cable)",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Chest-Supported Row (Machine)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Incline Smith Row",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Lat Prayer / Cable Pullover",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Machine Shrug",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Barbell Curl (Straight Bar)",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "EZ-Bar Curl",
+    "popularity": 9,
+    "bw": 0
+  },
+  {
+    "name": "Reverse Curl (EZ-Bar)",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Spider Curl",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Skullcrusher (EZ-Bar)",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Close-Grip EZ-Bar Press",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Overhead Triceps Extension (EZ-Bar)",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Trap Bar Deadlift",
+    "popularity": 8,
+    "bw": 0
+  },
+  {
+    "name": "Trap Bar Farmer's Walk",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Yoke Carry",
+    "popularity": 4,
+    "bw": 0
+  },
+  {
+    "name": "Sled Push (Prowler)",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Sled Pull",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Tire Flip",
+    "popularity": 5,
+    "bw": 0
+  },
+  {
+    "name": "Atlas Stone Lift",
+    "popularity": 4,
+    "bw": 0
+  },
+  {
+    "name": "Cable Pull-Through",
+    "popularity": 7,
+    "bw": 0
+  },
+  {
+    "name": "Seated Good Morning (Machine)",
+    "popularity": 4,
+    "bw": 0
+  },
+  {
+    "name": "Reverse Lunge (Smith Machine)",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Sissy Squat (Machine/Bench)",
+    "popularity": 5,
+    "bw": 0
+  },
+  {
+    "name": "Jefferson Squat",
+    "popularity": 4,
+    "bw": 0
+  },
+  {
+    "name": "Wrist Curl (Barbell)",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Reverse Wrist Curl (Barbell)",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Farmer's Hold (Dumbbells)",
+    "popularity": 6,
+    "bw": 0
+  },
+  {
+    "name": "Plate Pinch Hold",
+    "popularity": 5,
+    "bw": 0
+  },
+  {
+    "name": "Towel Grip Pull-Up",
+    "popularity": 5,
+    "bw": 1
+  },
+  {
+    "name": "Neck Flexion (Harness)",
+    "popularity": 3,
+    "bw": 0
+  },
+  {
+    "name": "Neck Extension (Harness)",
+    "popularity": 3,
+    "bw": 0
+  },
+  {
+    "name": "Neck Lateral Flexion (Manual/DB)",
+    "popularity": 3,
+    "bw": 0
+  }
+]
