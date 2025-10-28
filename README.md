@@ -61,7 +61,7 @@ All data is securely synced with Firebase, ensuring smooth cross-device use (pla
 - 1RM Calculator ❎
 - Weight Log Chart ❎
 - 1RM Chart Visualization ❎
-- Cloud Storage for Exercise Library ❎
+- Cloud Storage for Exercise Library ✅
 - iOS Support ❎
 
 ## Vision 💡
