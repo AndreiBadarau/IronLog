@@ -5,18 +5,19 @@ import { WorkoutService } from "@/src/services/workoutService";
 import { DraftWorkout } from "@/src/types/draftWorkout";
 import { Workout } from "@/src/types/workout";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function WorkoutsScreen() {
@@ -24,36 +25,37 @@ export default function WorkoutsScreen() {
   const { user } = useAuth();
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [showActiveWorkout, setShowActiveWorkout] = useState(false);
   const [existingDraft, setExistingDraft] = useState<DraftWorkout | null>(null);
 
-  const workoutService = useMemo(() => 
-    user ? new WorkoutService(user.uid) : null, 
+  const workoutService = useMemo(
+    () => (user ? new WorkoutService(user.uid) : null),
     [user]
   );
 
   const loadWorkouts = useCallback(async () => {
     if (!workoutService) return;
-    
+
     try {
       setLoading(true);
       const userWorkouts = await workoutService.getWorkouts();
       // Sort by date (newest first)
-      const sortedWorkouts = userWorkouts.sort((a, b) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
+      const sortedWorkouts = userWorkouts.sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
       setWorkouts(sortedWorkouts);
-      
+
       // Check for existing draft
-      const draftData = await AsyncStorage.getItem('current_draft_workout');
+      const draftData = await AsyncStorage.getItem("current_draft_workout");
       if (draftData) {
         setExistingDraft(JSON.parse(draftData));
       } else {
         setExistingDraft(null);
       }
     } catch (error) {
-      console.error('Error loading workouts:', error);
-      Alert.alert('Error', 'Failed to load workouts');
+      console.error("Error loading workouts:", error);
+      Alert.alert("Error", "Failed to load workouts");
     } finally {
       setLoading(false);
     }
@@ -65,59 +67,77 @@ export default function WorkoutsScreen() {
     }, [loadWorkouts])
   );
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadWorkouts();
+    setRefreshing(false);
+  }, [loadWorkouts]);
+
+  const updateDraftStatus = useCallback(async () => {
+    const draftData = await AsyncStorage.getItem("current_draft_workout");
+    if (draftData) {
+      setExistingDraft(JSON.parse(draftData));
+    } else {
+      setExistingDraft(null);
+    }
+  }, []);
+
   const handleNewWorkout = () => {
     setShowActiveWorkout(true);
   };
 
   const handleDeleteWorkout = (workoutId: string) => {
     Alert.alert(
-      'Delete Workout',
-      'Are you sure you want to delete this workout?',
+      "Delete Workout",
+      "Are you sure you want to delete this workout?",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             try {
               await workoutService?.deleteWorkout(workoutId);
               await loadWorkouts(); // Refresh the list
             } catch {
-              Alert.alert('Error', 'Failed to delete workout');
+              Alert.alert("Error", "Failed to delete workout");
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const getWorkoutSummary = (workout: Workout) => {
     const exerciseCount = workout.exercises.length;
-    const totalSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+    const totalSets = workout.exercises.reduce(
+      (sum, ex) => sum + ex.sets.length,
+      0
+    );
     const cardioCount = workout.cardioSessions.length;
-    
-    let summary = `${exerciseCount} exercise${exerciseCount !== 1 ? 's' : ''}`;
+
+    let summary = `${exerciseCount} exercise${exerciseCount !== 1 ? "s" : ""}`;
     if (totalSets > 0) summary += ` • ${totalSets} sets`;
     if (cardioCount > 0) summary += ` • ${cardioCount} cardio`;
-    
+
     return summary;
   };
 
   const renderWorkoutItem = ({ item: workout }: { item: Workout }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.workoutCard}
       onPress={() => {
         // TODO: Navigate to workout detail/edit screen
-        console.log('Open workout:', workout.id);
+        console.log("Open workout:", workout.id);
       }}
     >
       <View style={styles.workoutHeader}>
@@ -125,7 +145,7 @@ export default function WorkoutsScreen() {
           <Text style={styles.workoutTitle}>{workout.title}</Text>
           <Text style={styles.workoutDate}>{formatDate(workout.date)}</Text>
         </View>
-        
+
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={() => handleDeleteWorkout(workout.id)}
@@ -133,15 +153,16 @@ export default function WorkoutsScreen() {
           <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
         </TouchableOpacity>
       </View>
-      
+
       <Text style={styles.workoutSummary}>{getWorkoutSummary(workout)}</Text>
-      
+
       {workout.duration && (
         <Text style={styles.workoutDuration}>
-          <Ionicons name="time-outline" size={14} color="#888" /> {workout.duration} min
+          <Ionicons name="time-outline" size={14} color="#888" />{" "}
+          {workout.duration} min
         </Text>
       )}
-      
+
       {!workout.synced && (
         <View style={styles.syncStatus}>
           <Ionicons name="cloud-offline-outline" size={14} color="#FFA500" />
@@ -162,10 +183,10 @@ export default function WorkoutsScreen() {
           </View>
         )}
       </View>
-      
+
       <View style={styles.buttonContainer}>
         {existingDraft && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.newWorkoutButton, styles.draftButton]}
             onPress={handleNewWorkout}
           >
@@ -173,8 +194,8 @@ export default function WorkoutsScreen() {
             <Text style={styles.newWorkoutText}>Continue Draft</Text>
           </TouchableOpacity>
         )}
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.newWorkoutButton}
           onPress={() => {
             setExistingDraft(null);
@@ -183,7 +204,7 @@ export default function WorkoutsScreen() {
         >
           <Ionicons name="add" size={24} color="#fff" />
           <Text style={styles.newWorkoutText}>
-            {existingDraft ? 'New Workout' : 'Start Workout'}
+            {existingDraft ? "New Workout" : "Start Workout"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -222,6 +243,14 @@ export default function WorkoutsScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listContainer}
             style={styles.flatList}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor="#2EA0FF"
+                colors={["#2EA0FF"]}
+              />
+            }
           />
         )}
       </View>
@@ -230,11 +259,16 @@ export default function WorkoutsScreen() {
       {showActiveWorkout && workoutService && (
         <DraftWorkoutBuilder
           visible={showActiveWorkout}
-          onClose={() => setShowActiveWorkout(false)}
+          onClose={async () => {
+            setShowActiveWorkout(false);
+            // Always refresh draft status when closing
+            await updateDraftStatus();
+          }}
           onWorkoutSaved={async () => {
             setShowActiveWorkout(false);
             await loadWorkouts();
           }}
+          onDraftUpdated={updateDraftStatus}
           workoutService={workoutService}
           existingDraft={existingDraft}
         />
@@ -256,7 +290,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#fff",
     marginBottom: 20,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowColor: "rgba(0, 0, 0, 0.8)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
@@ -375,9 +409,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   buttonContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   draftButton: {
     backgroundColor: "#FF6B35",
@@ -390,14 +424,14 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   draftIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     marginTop: 8,
   },
   draftIndicatorText: {
-    color: '#FF6B35',
+    color: "#FF6B35",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

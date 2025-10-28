@@ -2,8 +2,10 @@
 export interface Exercise {
   id: string;
   name: string;
-  category: 'strength' | 'cardio' | 'bodyweight';
-  muscleGroups: string[];
+  popularity: number; // 0-10, for sorting exercises by popularity
+  bw: number; // 0 = weighted exercise, 1 = bodyweight exercise
+  category?: "strength" | "cardio" | "bodyweight"; // Optional for backward compatibility
+  muscleGroups?: string[]; // Optional for backward compatibility
   isCustom?: boolean; // User-created exercise
   createdBy?: string; // User ID if custom
   isApproved?: boolean; // For admin approval of custom exercises
@@ -31,10 +33,10 @@ export interface WorkoutExercise {
 
 export interface CardioSession {
   id: string;
-  type: 'running' | 'cycling' | 'swimming' | 'walking' | 'other';
+  type: "running" | "cycling" | "swimming" | "walking" | "other";
   duration: number; // minutes
   distance?: number; // km or miles
-  intensity?: 'low' | 'medium' | 'high';
+  intensity?: "low" | "medium" | "high";
   calories?: number;
   notes?: string;
 }

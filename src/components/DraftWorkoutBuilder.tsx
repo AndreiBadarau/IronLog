@@ -1,50 +1,60 @@
 import { WorkoutService } from "@/src/services/workoutService";
 import { DraftWorkout } from "@/src/types/draftWorkout";
-import { CardioSession, Exercise, Set, WorkoutExercise } from "@/src/types/workout";
+import {
+  CardioSession,
+  Exercise,
+  Set,
+  WorkoutExercise,
+} from "@/src/types/workout";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface DraftWorkoutBuilderProps {
   visible: boolean;
   onClose: () => void;
   onWorkoutSaved: () => void;
+  onDraftUpdated?: () => void;
   workoutService: WorkoutService;
   existingDraft?: DraftWorkout | null;
 }
 
-const DRAFT_STORAGE_KEY = 'current_draft_workout';
+const DRAFT_STORAGE_KEY = "current_draft_workout";
 
 export default function DraftWorkoutBuilder({
   visible,
   onClose,
   onWorkoutSaved,
+  onDraftUpdated,
   workoutService,
   existingDraft,
 }: DraftWorkoutBuilderProps) {
-  const [draft, setDraft] = useState<DraftWorkout | null>(existingDraft || null);
+  const [draft, setDraft] = useState<DraftWorkout | null>(
+    existingDraft || null
+  );
   const [availableExercises, setAvailableExercises] = useState<Exercise[]>([]);
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [isDiscarding, setIsDiscarding] = useState(false);
 
-  const initializeNewDraft = () => {
+  const initializeNewDraft = useCallback(() => {
     const newDraft: DraftWorkout = {
       id: `draft_${Date.now()}`,
       title: `Workout - ${new Date().toLocaleDateString()}`,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split("T")[0],
       exercises: [],
       cardioSessions: [],
       isDraft: true,
@@ -52,32 +62,52 @@ export default function DraftWorkoutBuilder({
       lastModified: new Date().toISOString(),
     };
     setDraft(newDraft);
-  };
+
+    // Immediately save the new draft to storage
+    setTimeout(async () => {
+      try {
+        await AsyncStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(newDraft));
+        if (onDraftUpdated) {
+          onDraftUpdated();
+        }
+      } catch (error) {
+        console.error("Error saving initial draft:", error);
+      }
+    }, 100);
+  }, [onDraftUpdated]);
 
   const loadExercises = useCallback(async () => {
     try {
       const exercises = await workoutService.getExercises();
       setAvailableExercises(exercises);
     } catch (error) {
-      console.error('Error loading exercises:', error);
+      console.error("Error loading exercises:", error);
     }
   }, [workoutService]);
 
   const saveDraftLocally = useCallback(async () => {
     if (!draft) return;
-    
+
     const updatedDraft = {
       ...draft,
       lastModified: new Date().toISOString(),
     };
-    
+
     try {
-      await AsyncStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(updatedDraft));
-      setDraft(updatedDraft);
+      await AsyncStorage.setItem(
+        DRAFT_STORAGE_KEY,
+        JSON.stringify(updatedDraft)
+      );
+      // Don't call setDraft here to avoid circular updates
+
+      // Notify parent component that draft was updated
+      if (onDraftUpdated) {
+        onDraftUpdated();
+      }
     } catch (error) {
-      console.error('Error saving draft:', error);
+      console.error("Error saving draft:", error);
     }
-  }, [draft]);
+  }, [draft, onDraftUpdated]);
 
   // Initialize draft when modal opens
   useEffect(() => {
@@ -87,84 +117,130 @@ export default function DraftWorkoutBuilder({
     if (visible) {
       loadExercises();
     }
-  }, [visible, draft, loadExercises]);
+  }, [visible, draft, loadExercises, initializeNewDraft]);
 
-  // Auto-save draft on changes
+  // Auto-save draft on changes (debounced)
   useEffect(() => {
-    if (draft && visible) {
+    if (!draft || !visible || isDiscarding) return;
+
+    const timeoutId = setTimeout(() => {
       saveDraftLocally();
-    }
-  }, [draft, visible, saveDraftLocally]);
+    }, 500); // Debounce for 500ms
 
-  const updateDraft = (updates: Partial<DraftWorkout>) => {
-    if (!draft) return;
-    
-    setDraft({
-      ...draft,
-      ...updates,
-      lastModified: new Date().toISOString(),
-    });
-  };
+    return () => clearTimeout(timeoutId);
+  }, [draft, visible, isDiscarding, saveDraftLocally]);
 
-  const addExercise = (exercise: Exercise) => {
-    if (!draft) return;
-
-    const newExercise: WorkoutExercise = {
-      id: `exercise_${Date.now()}`,
-      exerciseId: exercise.id,
-      exerciseName: exercise.name,
-      sets: [],
-      order: draft.exercises.length,
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      setIsDiscarding(false);
     };
+  }, []);
 
-    updateDraft({
-      exercises: [...draft.exercises, newExercise],
+  const updateDraft = useCallback((updates: Partial<DraftWorkout>) => {
+    setDraft((currentDraft) => {
+      if (!currentDraft) return currentDraft;
+
+      return {
+        ...currentDraft,
+        ...updates,
+        lastModified: new Date().toISOString(),
+      };
+    });
+  }, []);
+
+  const addExercise = useCallback((exercise: Exercise) => {
+    setDraft((currentDraft) => {
+      if (!currentDraft) return currentDraft;
+
+      const newExercise: WorkoutExercise = {
+        id: `exercise_${Date.now()}`,
+        exerciseId: exercise.id,
+        exerciseName: exercise.name,
+        sets: [],
+        order: currentDraft.exercises.length,
+      };
+
+      return {
+        ...currentDraft,
+        exercises: [...currentDraft.exercises, newExercise],
+        lastModified: new Date().toISOString(),
+      };
     });
 
     setShowExerciseSelector(false);
-  };
+  }, []);
 
-  const updateExercise = (exerciseId: string, updates: Partial<WorkoutExercise>) => {
-    if (!draft) return;
+  const updateExercise = useCallback(
+    (exerciseId: string, updates: Partial<WorkoutExercise>) => {
+      setDraft((currentDraft) => {
+        if (!currentDraft) return currentDraft;
 
-    const updatedExercises = draft.exercises.map(exercise =>
-      exercise.id === exerciseId ? { ...exercise, ...updates } : exercise
-    );
+        const updatedExercises = currentDraft.exercises.map((exercise) =>
+          exercise.id === exerciseId ? { ...exercise, ...updates } : exercise
+        );
 
-    updateDraft({ exercises: updatedExercises });
-  };
+        return {
+          ...currentDraft,
+          exercises: updatedExercises,
+          lastModified: new Date().toISOString(),
+        };
+      });
+    },
+    []
+  );
 
-  const removeExercise = (exerciseId: string) => {
-    if (!draft) return;
+  const removeExercise = useCallback(
+    (exerciseId: string) => {
+      if (!draft) return;
 
-    Alert.alert(
-      'Remove Exercise',
-      'Are you sure you want to remove this exercise?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            const updatedExercises = draft.exercises.filter(ex => ex.id !== exerciseId);
-            updateDraft({ exercises: updatedExercises });
+      Alert.alert(
+        "Remove Exercise",
+        "Are you sure you want to remove this exercise?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Remove",
+            style: "destructive",
+            onPress: () => {
+              setDraft((currentDraft) => {
+                if (!currentDraft) return currentDraft;
+
+                const updatedExercises = currentDraft.exercises.filter(
+                  (ex) => ex.id !== exerciseId
+                );
+
+                return {
+                  ...currentDraft,
+                  exercises: updatedExercises,
+                  lastModified: new Date().toISOString(),
+                };
+              });
+            },
           },
-        },
-      ]
-    );
-  };
+        ]
+      );
+    },
+    [draft]
+  );
 
   const addSet = (exerciseId: string) => {
     if (!draft) return;
 
-    const exercise = draft.exercises.find(ex => ex.id === exerciseId);
+    const exercise = draft.exercises.find((ex) => ex.id === exerciseId);
     if (!exercise) return;
+
+    // Find the exercise data to check if it's bodyweight
+    const exerciseData = availableExercises.find(
+      (ex) => ex.id === exercise.exerciseId
+    );
+    const isBodyweightExercise = exerciseData?.bw === 1;
 
     const newSet: Set = {
       id: `set_${Date.now()}`,
       reps: 10,
-      weight: 0,
-      isBodyweight: false,
+      weight: isBodyweightExercise ? 0 : 20, // Default weight for weighted exercises
+      isBodyweight: isBodyweightExercise,
     };
 
     updateExercise(exerciseId, {
@@ -172,13 +248,17 @@ export default function DraftWorkoutBuilder({
     });
   };
 
-  const updateSet = (exerciseId: string, setId: string, updates: Partial<Set>) => {
+  const updateSet = (
+    exerciseId: string,
+    setId: string,
+    updates: Partial<Set>
+  ) => {
     if (!draft) return;
 
-    const exercise = draft.exercises.find(ex => ex.id === exerciseId);
+    const exercise = draft.exercises.find((ex) => ex.id === exerciseId);
     if (!exercise) return;
 
-    const updatedSets = exercise.sets.map(set =>
+    const updatedSets = exercise.sets.map((set) =>
       set.id === setId ? { ...set, ...updates } : set
     );
 
@@ -188,50 +268,93 @@ export default function DraftWorkoutBuilder({
   const removeSet = (exerciseId: string, setId: string) => {
     if (!draft) return;
 
-    const exercise = draft.exercises.find(ex => ex.id === exerciseId);
+    const exercise = draft.exercises.find((ex) => ex.id === exerciseId);
     if (!exercise) return;
 
-    const updatedSets = exercise.sets.filter(set => set.id !== setId);
+    const updatedSets = exercise.sets.filter((set) => set.id !== setId);
     updateExercise(exerciseId, { sets: updatedSets });
   };
 
-  const addCardioSession = () => {
-    if (!draft) return;
+  const addCardioSession = useCallback(() => {
+    setDraft((currentDraft) => {
+      if (!currentDraft) return currentDraft;
 
-    const newSession: CardioSession = {
-      id: `cardio_${Date.now()}`,
-      type: 'running',
-      duration: 30,
-      intensity: 'medium',
-    };
+      const newSession: CardioSession = {
+        id: `cardio_${Date.now()}`,
+        type: "running",
+        duration: 30,
+        intensity: "medium",
+      };
 
-    updateDraft({
-      cardioSessions: [...draft.cardioSessions, newSession],
+      return {
+        ...currentDraft,
+        cardioSessions: [...currentDraft.cardioSessions, newSession],
+        lastModified: new Date().toISOString(),
+      };
     });
-  };
+  }, []);
 
-  const updateCardioSession = (sessionId: string, updates: Partial<CardioSession>) => {
-    if (!draft) return;
+  const updateCardioSession = useCallback(
+    (sessionId: string, updates: Partial<CardioSession>) => {
+      setDraft((currentDraft) => {
+        if (!currentDraft) return currentDraft;
 
-    const updatedSessions = draft.cardioSessions.map(session =>
-      session.id === sessionId ? { ...session, ...updates } : session
-    );
+        const updatedSessions = currentDraft.cardioSessions.map((session) =>
+          session.id === sessionId ? { ...session, ...updates } : session
+        );
 
-    updateDraft({ cardioSessions: updatedSessions });
-  };
+        return {
+          ...currentDraft,
+          cardioSessions: updatedSessions,
+          lastModified: new Date().toISOString(),
+        };
+      });
+    },
+    []
+  );
 
-  const removeCardioSession = (sessionId: string) => {
-    if (!draft) return;
+  const removeCardioSession = useCallback(
+    (sessionId: string) => {
+      if (!draft) return;
 
-    const updatedSessions = draft.cardioSessions.filter(session => session.id !== sessionId);
-    updateDraft({ cardioSessions: updatedSessions });
-  };
+      Alert.alert(
+        "Remove Cardio Session",
+        "Are you sure you want to remove this cardio session?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Remove",
+            style: "destructive",
+            onPress: () => {
+              setDraft((currentDraft) => {
+                if (!currentDraft) return currentDraft;
+
+                const updatedSessions = currentDraft.cardioSessions.filter(
+                  (session) => session.id !== sessionId
+                );
+
+                return {
+                  ...currentDraft,
+                  cardioSessions: updatedSessions,
+                  lastModified: new Date().toISOString(),
+                };
+              });
+            },
+          },
+        ]
+      );
+    },
+    [draft]
+  );
 
   const saveWorkout = async () => {
     if (!draft) return;
 
     if (draft.exercises.length === 0 && draft.cardioSessions.length === 0) {
-      Alert.alert('Empty Workout', 'Please add at least one exercise or cardio session.');
+      Alert.alert(
+        "Empty Workout",
+        "Please add at least one exercise or cardio session."
+      );
       return;
     }
 
@@ -249,16 +372,16 @@ export default function DraftWorkoutBuilder({
       };
 
       await workoutService.createWorkout(workout);
-      
+
       // Clear the draft
       await AsyncStorage.removeItem(DRAFT_STORAGE_KEY);
-      
+
       onWorkoutSaved();
       onClose();
       setDraft(null);
     } catch (error) {
-      console.error('Error saving workout:', error);
-      Alert.alert('Error', 'Failed to save workout');
+      console.error("Error saving workout:", error);
+      Alert.alert("Error", "Failed to save workout");
     } finally {
       setSaving(false);
     }
@@ -266,31 +389,35 @@ export default function DraftWorkoutBuilder({
 
   const calculateWorkoutDuration = (): number => {
     if (!draft) return 0;
-    
+
     // Simple calculation: 2 minutes per set + cardio time
     const exerciseTime = draft.exercises.reduce((total, exercise) => {
       return total + exercise.sets.length * 2;
     }, 0);
-    
+
     const cardioTime = draft.cardioSessions.reduce((total, session) => {
       return total + session.duration;
     }, 0);
-    
+
     return exerciseTime + cardioTime;
   };
 
   const discardDraft = () => {
     Alert.alert(
-      'Discard Draft',
-      'Are you sure? All unsaved changes will be lost.',
+      "Discard Draft",
+      "Are you sure? All unsaved changes will be lost.",
       [
-        { text: 'Keep Draft', style: 'cancel' },
+        { text: "Keep Draft", style: "cancel" },
         {
-          text: 'Discard',
-          style: 'destructive',
+          text: "Discard",
+          style: "destructive",
           onPress: async () => {
+            setIsDiscarding(true);
             await AsyncStorage.removeItem(DRAFT_STORAGE_KEY);
             setDraft(null);
+            if (onDraftUpdated) {
+              onDraftUpdated();
+            }
             onClose();
           },
         },
@@ -298,23 +425,32 @@ export default function DraftWorkoutBuilder({
     );
   };
 
-  const handleClose = () => {
-    if (!draft || (draft.exercises.length === 0 && draft.cardioSessions.length === 0)) {
+  const handleClose = async () => {
+    if (
+      !draft ||
+      (draft.exercises.length === 0 && draft.cardioSessions.length === 0)
+    ) {
+      // If empty draft, remove it from storage and close
+      setIsDiscarding(true);
+      await AsyncStorage.removeItem(DRAFT_STORAGE_KEY);
+      if (onDraftUpdated) {
+        onDraftUpdated();
+      }
       onClose();
       return;
     }
 
     Alert.alert(
-      'Save Draft?',
-      'Your workout will be saved as a draft and you can continue it later.',
+      "Save Draft?",
+      "Your workout will be saved as a draft and you can continue it later.",
       [
         {
-          text: 'Discard',
-          style: 'destructive',
+          text: "Discard",
+          style: "destructive",
           onPress: discardDraft,
         },
         {
-          text: 'Save Draft',
+          text: "Save Draft",
           onPress: onClose,
         },
       ]
@@ -336,22 +472,22 @@ export default function DraftWorkoutBuilder({
           <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
             <Ionicons name="close" size={24} color="#fff" />
           </TouchableOpacity>
-          
+
           <Text style={styles.headerTitle}>New Workout</Text>
-          
-          <TouchableOpacity 
-            onPress={saveWorkout} 
+
+          <TouchableOpacity
+            onPress={saveWorkout}
             style={[styles.headerButton, styles.saveButton]}
             disabled={saving}
           >
             <Text style={styles.saveButtonText}>
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? "Saving..." : "Save"}
             </Text>
           </TouchableOpacity>
         </View>
 
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.content}
         >
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -370,24 +506,37 @@ export default function DraftWorkoutBuilder({
             {/* Exercises Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Exercises ({draft.exercises.length})</Text>
-                <TouchableOpacity onPress={() => setShowExerciseSelector(true)} style={styles.addButton}>
+                <Text style={styles.sectionTitle}>
+                  Exercises ({draft.exercises.length})
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setShowExerciseSelector(true)}
+                  style={styles.addButton}
+                >
                   <Ionicons name="add" size={20} color="#2EA0FF" />
                   <Text style={styles.addButtonText}>Add Exercise</Text>
                 </TouchableOpacity>
               </View>
 
-              {draft.exercises.map((exercise) => (
-                <ExerciseCard
-                  key={exercise.id}
-                  exercise={exercise}
-                  onUpdate={(updates) => updateExercise(exercise.id, updates)}
-                  onRemove={() => removeExercise(exercise.id)}
-                  onAddSet={() => addSet(exercise.id)}
-                  onUpdateSet={(setId, updates) => updateSet(exercise.id, setId, updates)}
-                  onRemoveSet={(setId) => removeSet(exercise.id, setId)}
-                />
-              ))}
+              {draft.exercises.map((exercise) => {
+                const exerciseData = availableExercises.find(
+                  (ex) => ex.id === exercise.exerciseId
+                );
+                return (
+                  <ExerciseCard
+                    key={exercise.id}
+                    exercise={exercise}
+                    exerciseData={exerciseData}
+                    onUpdate={(updates) => updateExercise(exercise.id, updates)}
+                    onRemove={() => removeExercise(exercise.id)}
+                    onAddSet={() => addSet(exercise.id)}
+                    onUpdateSet={(setId, updates) =>
+                      updateSet(exercise.id, setId, updates)
+                    }
+                    onRemoveSet={(setId) => removeSet(exercise.id, setId)}
+                  />
+                );
+              })}
 
               {draft.exercises.length === 0 && (
                 <View style={styles.emptyState}>
@@ -400,8 +549,13 @@ export default function DraftWorkoutBuilder({
             {/* Cardio Section */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Cardio ({draft.cardioSessions.length})</Text>
-                <TouchableOpacity onPress={addCardioSession} style={styles.addButton}>
+                <Text style={styles.sectionTitle}>
+                  Cardio ({draft.cardioSessions.length})
+                </Text>
+                <TouchableOpacity
+                  onPress={addCardioSession}
+                  style={styles.addButton}
+                >
                   <Ionicons name="add" size={20} color="#2EA0FF" />
                   <Text style={styles.addButtonText}>Add Cardio</Text>
                 </TouchableOpacity>
@@ -411,7 +565,9 @@ export default function DraftWorkoutBuilder({
                 <CardioCard
                   key={session.id}
                   session={session}
-                  onUpdate={(updates) => updateCardioSession(session.id, updates)}
+                  onUpdate={(updates) =>
+                    updateCardioSession(session.id, updates)
+                  }
                   onRemove={() => removeCardioSession(session.id)}
                 />
               ))}
@@ -422,7 +578,7 @@ export default function DraftWorkoutBuilder({
               <Text style={styles.sectionTitle}>Notes</Text>
               <TextInput
                 style={styles.notesInput}
-                value={draft.notes || ''}
+                value={draft.notes || ""}
                 onChangeText={(text) => updateDraft({ notes: text })}
                 placeholder="Add workout notes..."
                 placeholderTextColor="#888"
@@ -449,17 +605,37 @@ export default function DraftWorkoutBuilder({
                 <Ionicons name="close" size={24} color="#fff" />
               </TouchableOpacity>
             </View>
-            
+
             <FlatList
-              data={availableExercises}
+              data={availableExercises.sort(
+                (a, b) => b.popularity - a.popularity
+              )}
               keyExtractor={(item) => item.id}
               renderItem={({ item: exercise }) => (
                 <TouchableOpacity
                   style={styles.exerciseOption}
                   onPress={() => addExercise(exercise)}
                 >
-                  <Text style={styles.exerciseOptionName}>{exercise.name}</Text>
-                  <Text style={styles.exerciseOptionCategory}>{exercise.category}</Text>
+                  <View style={styles.exerciseOptionHeader}>
+                    <Text style={styles.exerciseOptionName}>
+                      {exercise.name}
+                    </Text>
+                    <View style={styles.exerciseOptionMeta}>
+                      <Text style={styles.popularityText}>
+                        ★ {exercise.popularity}
+                      </Text>
+                      {exercise.bw === 1 && (
+                        <View style={styles.bodyweightIndicator}>
+                          <Text style={styles.bodyweightIndicatorText}>BW</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  {exercise.category && (
+                    <Text style={styles.exerciseOptionCategory}>
+                      {exercise.category}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               )}
             />
@@ -473,6 +649,7 @@ export default function DraftWorkoutBuilder({
 // Exercise Card Component
 interface ExerciseCardProps {
   exercise: WorkoutExercise;
+  exerciseData?: Exercise;
   onUpdate: (updates: Partial<WorkoutExercise>) => void;
   onRemove: () => void;
   onAddSet: () => void;
@@ -482,6 +659,7 @@ interface ExerciseCardProps {
 
 function ExerciseCard({
   exercise,
+  exerciseData,
   onUpdate,
   onRemove,
   onAddSet,
@@ -491,7 +669,14 @@ function ExerciseCard({
   return (
     <View style={styles.exerciseCard}>
       <View style={styles.exerciseHeader}>
-        <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+        <View style={styles.exerciseInfo}>
+          <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+          {exerciseData?.bw === 1 && (
+            <View style={styles.bodyweightBadge}>
+              <Text style={styles.bodyweightBadgeText}>Bodyweight</Text>
+            </View>
+          )}
+        </View>
         <TouchableOpacity onPress={onRemove} style={styles.removeButton}>
           <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
         </TouchableOpacity>
@@ -501,42 +686,59 @@ function ExerciseCard({
       {exercise.sets.map((set, setIndex) => (
         <View key={set.id} style={styles.setRow}>
           <Text style={styles.setNumber}>{setIndex + 1}</Text>
-          
+
           <TextInput
             style={styles.setInput}
-            value={set.reps?.toString() || ''}
-            onChangeText={(text) => onUpdateSet(set.id, { reps: parseInt(text) || 0 })}
+            value={set.reps?.toString() || ""}
+            onChangeText={(text) =>
+              onUpdateSet(set.id, { reps: parseInt(text) || 0 })
+            }
             placeholder="Reps"
             placeholderTextColor="#888"
             keyboardType="numeric"
           />
-          
+
           <TouchableOpacity
-            style={[styles.bodyweightToggle, set.isBodyweight && styles.bodyweightActive]}
-            onPress={() => onUpdateSet(set.id, { isBodyweight: !set.isBodyweight })}
+            style={[
+              styles.bodyweightToggle,
+              set.isBodyweight && styles.bodyweightActive,
+            ]}
+            onPress={() =>
+              onUpdateSet(set.id, { isBodyweight: !set.isBodyweight })
+            }
           >
-            <Text style={[styles.bodyweightText, set.isBodyweight && styles.bodyweightTextActive]}>
+            <Text
+              style={[
+                styles.bodyweightText,
+                set.isBodyweight && styles.bodyweightTextActive,
+              ]}
+            >
               BW
             </Text>
           </TouchableOpacity>
-          
+
           {!set.isBodyweight && (
             <TextInput
               style={styles.setInput}
-              value={set.weight?.toString() || ''}
-              onChangeText={(text) => onUpdateSet(set.id, { weight: parseFloat(text) || 0 })}
+              value={set.weight?.toString() || ""}
+              onChangeText={(text) =>
+                onUpdateSet(set.id, { weight: parseFloat(text) || 0 })
+              }
               placeholder="Weight"
               placeholderTextColor="#888"
               keyboardType="numeric"
             />
           )}
-          
-          <TouchableOpacity onPress={() => onRemoveSet(set.id)} style={styles.removeSetButton}>
+
+          <TouchableOpacity
+            onPress={() => onRemoveSet(set.id)}
+            style={styles.removeSetButton}
+          >
             <Ionicons name="close" size={16} color="#FF6B6B" />
           </TouchableOpacity>
         </View>
       ))}
-      
+
       <TouchableOpacity onPress={onAddSet} style={styles.addSetButton}>
         <Ionicons name="add" size={16} color="#2EA0FF" />
         <Text style={styles.addSetText}>Add Set</Text>
@@ -553,19 +755,41 @@ interface CardioCardProps {
 }
 
 function CardioCard({ session, onUpdate, onRemove }: CardioCardProps) {
+  const [showTypePicker, setShowTypePicker] = useState(false);
+
+  const cardioTypes: { value: CardioSession["type"]; label: string }[] = [
+    { value: "running", label: "Running" },
+    { value: "cycling", label: "Cycling" },
+    { value: "swimming", label: "Swimming" },
+    { value: "walking", label: "Walking" },
+    { value: "other", label: "Other" },
+  ];
+
+  const handleRemove = () => {
+    onRemove();
+  };
 
   return (
     <View style={styles.cardioCard}>
       <View style={styles.cardioHeader}>
         <Text style={styles.cardioTitle}>Cardio Session</Text>
-        <TouchableOpacity onPress={onRemove} style={styles.removeButton}>
+        <TouchableOpacity onPress={handleRemove} style={styles.removeButton}>
           <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
         </TouchableOpacity>
       </View>
 
       <View style={styles.cardioRow}>
         <Text style={styles.cardioLabel}>Type:</Text>
-        <Text style={styles.cardioValue}>{session.type}</Text>
+        <TouchableOpacity
+          style={styles.cardioTypeButton}
+          onPress={() => setShowTypePicker(true)}
+        >
+          <Text style={styles.cardioValue}>
+            {cardioTypes.find((t) => t.value === session.type)?.label ||
+              "Select Type"}
+          </Text>
+          <Ionicons name="chevron-down" size={16} color="#888" />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.cardioRow}>
@@ -581,13 +805,17 @@ function CardioCard({ session, onUpdate, onRemove }: CardioCardProps) {
         <Text style={styles.cardioUnit}>min</Text>
       </View>
 
-      {session.distance !== undefined && (
+      {(session.type === "running" ||
+        session.type === "cycling" ||
+        session.type === "walking") && (
         <View style={styles.cardioRow}>
           <Text style={styles.cardioLabel}>Distance:</Text>
           <TextInput
             style={styles.cardioInput}
-            value={session.distance?.toString() || ''}
-            onChangeText={(text) => onUpdate({ distance: parseFloat(text) || 0 })}
+            value={session.distance?.toString() || ""}
+            onChangeText={(text) =>
+              onUpdate({ distance: parseFloat(text) || 0 })
+            }
             placeholder="Distance"
             placeholderTextColor="#888"
             keyboardType="numeric"
@@ -595,6 +823,47 @@ function CardioCard({ session, onUpdate, onRemove }: CardioCardProps) {
           <Text style={styles.cardioUnit}>km</Text>
         </View>
       )}
+
+      {/* Type Picker Modal */}
+      <Modal
+        visible={showTypePicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowTypePicker(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowTypePicker(false)}
+        >
+          <View style={styles.typePickerContainer}>
+            <Text style={styles.typePickerTitle}>Select Cardio Type</Text>
+            {cardioTypes.map((type) => (
+              <TouchableOpacity
+                key={type.value}
+                style={[
+                  styles.typeOption,
+                  session.type === type.value && styles.typeOptionSelected,
+                ]}
+                onPress={() => {
+                  onUpdate({ type: type.value });
+                  setShowTypePicker(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.typeOptionText,
+                    session.type === type.value &&
+                      styles.typeOptionTextSelected,
+                  ]}
+                >
+                  {type.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -845,5 +1114,97 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#888",
     textTransform: "capitalize",
+  },
+  cardioTypeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#222",
+    borderRadius: 6,
+    padding: 8,
+    flex: 1,
+    marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  typePickerContainer: {
+    backgroundColor: "#111",
+    borderRadius: 12,
+    margin: 20,
+    maxWidth: 300,
+    width: "80%",
+  },
+  typePickerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#fff",
+    textAlign: "center",
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
+  },
+  typeOption: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
+  },
+  typeOptionSelected: {
+    backgroundColor: "#2EA0FF",
+  },
+  typeOptionText: {
+    fontSize: 16,
+    color: "#fff",
+    textAlign: "center",
+  },
+  typeOptionTextSelected: {
+    fontWeight: "600",
+  },
+  exerciseInfo: {
+    flex: 1,
+  },
+  bodyweightBadge: {
+    backgroundColor: "#4CAF50",
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop: 4,
+    alignSelf: "flex-start",
+  },
+  bodyweightBadgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  exerciseOptionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  exerciseOptionMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  popularityText: {
+    color: "#FFD700",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  bodyweightIndicator: {
+    backgroundColor: "#4CAF50",
+    borderRadius: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  bodyweightIndicatorText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "600",
   },
 });
