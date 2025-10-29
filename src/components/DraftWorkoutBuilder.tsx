@@ -239,17 +239,11 @@ export default function DraftWorkoutBuilder({
     const exercise = draft.exercises.find((ex) => ex.id === exerciseId);
     if (!exercise) return;
 
-    // Find the exercise data to check if it's bodyweight
-    const exerciseData = availableExercises.find(
-      (ex) => ex.id === exercise.exerciseId
-    );
-    const isBodyweightExercise = exerciseData?.bw === 1;
-
     const newSet: Set = {
       id: `set_${Date.now()}`,
       reps: 10,
-      weight: isBodyweightExercise ? 0 : 20, // Default weight for weighted exercises
-      isBodyweight: isBodyweightExercise,
+      weight: 20, // Default weight
+      isBodyweight: false,
     };
 
     updateExercise(exerciseId, {
@@ -606,11 +600,6 @@ export default function DraftWorkoutBuilder({
                       <Text style={styles.popularityText}>
                         ★ {exercise.popularity || 0}
                       </Text>
-                      {exercise.bw === 1 && (
-                        <View style={styles.bodyweightIndicator}>
-                          <Text style={styles.bodyweightIndicatorText}>BW</Text>
-                        </View>
-                      )}
                     </View>
                   </View>
                   {!!exercise.category && (
@@ -726,16 +715,21 @@ function ExerciseCard({
           <Text style={styles.exerciseName}>
             {exercise.exerciseName || "Unknown Exercise"}
           </Text>
-          {exerciseData?.bw === 1 && (
-            <View style={styles.bodyweightBadge}>
-              <Text style={styles.bodyweightBadgeText}>Bodyweight</Text>
-            </View>
-          )}
         </View>
         <TouchableOpacity onPress={onRemove} style={styles.removeButton}>
           <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
         </TouchableOpacity>
       </View>
+
+      {/* Sets Header */}
+      {(exercise.sets || []).length > 0 && (
+        <View style={styles.setsHeader}>
+          <Text style={styles.setHeaderLabel}>Set</Text>
+          <Text style={styles.setHeaderLabel}>Reps</Text>
+          <Text style={styles.setHeaderLabel}>Weight</Text>
+          <View style={styles.setHeaderSpacer} />
+        </View>
+      )}
 
       {/* Sets */}
       {(exercise.sets || []).map((set, setIndex) => (
@@ -748,42 +742,21 @@ function ExerciseCard({
             onChangeText={(text) =>
               onUpdateSet(set.id, { reps: parseInt(text) || 0 })
             }
-            placeholder="Reps"
+            placeholder="0"
             placeholderTextColor="#888"
             keyboardType="numeric"
           />
 
-          <TouchableOpacity
-            style={[
-              styles.bodyweightToggle,
-              set.isBodyweight && styles.bodyweightActive,
-            ]}
-            onPress={() =>
-              onUpdateSet(set.id, { isBodyweight: !set.isBodyweight })
+          <TextInput
+            style={styles.setInput}
+            value={set.weight?.toString() || ""}
+            onChangeText={(text) =>
+              onUpdateSet(set.id, { weight: parseFloat(text) || 0 })
             }
-          >
-            <Text
-              style={[
-                styles.bodyweightText,
-                set.isBodyweight && styles.bodyweightTextActive,
-              ]}
-            >
-              BW
-            </Text>
-          </TouchableOpacity>
-
-          {!set.isBodyweight && (
-            <TextInput
-              style={styles.setInput}
-              value={set.weight?.toString() || ""}
-              onChangeText={(text) =>
-                onUpdateSet(set.id, { weight: parseFloat(text) || 0 })
-              }
-              placeholder="Weight"
-              placeholderTextColor="#888"
-              keyboardType="numeric"
-            />
-          )}
+            placeholder="0"
+            placeholderTextColor="#888"
+            keyboardType="numeric"
+          />
 
           <TouchableOpacity
             onPress={() => onRemoveSet(set.id)}
@@ -1031,10 +1004,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   setNumber: {
-    width: 30,
+    flex: 1,
     textAlign: "center",
-    color: "#888",
+    color: "#fff",
     fontWeight: "600",
+    fontSize: 14,
   },
   setInput: {
     flex: 1,
@@ -1044,23 +1018,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     textAlign: "center",
   },
-  bodyweightToggle: {
-    backgroundColor: "#333",
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  bodyweightActive: {
-    backgroundColor: "#2EA0FF",
-  },
-  bodyweightText: {
-    color: "#888",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  bodyweightTextActive: {
-    color: "#fff",
-  },
+
   removeSetButton: {
     padding: 4,
   },
@@ -1222,19 +1180,7 @@ const styles = StyleSheet.create({
   exerciseInfo: {
     flex: 1,
   },
-  bodyweightBadge: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginTop: 4,
-    alignSelf: "flex-start",
-  },
-  bodyweightBadgeText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
+
   exerciseOptionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1251,15 +1197,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  bodyweightIndicator: {
-    backgroundColor: "#4CAF50",
-    borderRadius: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+
+  setsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+    gap: 8,
   },
-  bodyweightIndicatorText: {
-    color: "#fff",
-    fontSize: 10,
+  setHeaderLabel: {
+    flex: 1,
+    fontSize: 12,
+    color: "#888",
     fontWeight: "600",
+    textAlign: "center",
+  },
+  setHeaderSpacer: {
+    width: 16, // Same width as remove button
   },
 });

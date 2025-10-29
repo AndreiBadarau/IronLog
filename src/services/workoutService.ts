@@ -5,6 +5,7 @@ import {
   deleteDoc,
   doc,
   enableNetwork,
+  getDoc,
   getDocs,
   orderBy,
   query,
@@ -20,13 +21,20 @@ const STORAGE_KEYS = {
   EXERCISES: "exercises_cache",
   SYNC_STATUS: "sync_status",
   PENDING_UPLOADS: "pending_uploads",
+  LAST_SYNC_TIME: "last_sync_time",
 };
+
+// Sync rate limiting constants
+const SYNC_COOLDOWN_HOURS = 18;
+const SYNC_COOLDOWN_MS = SYNC_COOLDOWN_HOURS * 60 * 60 * 1000; // 18 hours in milliseconds
 
 class WorkoutService {
   private userId: string;
+  private isAnonymous: boolean;
 
-  constructor(userId: string) {
+  constructor(userId: string, isAnonymous: boolean = false) {
     this.userId = userId;
+    this.isAnonymous = isAnonymous;
   }
 
   // ================== WORKOUT OPERATIONS ==================
@@ -49,12 +57,16 @@ class WorkoutService {
     // Save locally first (offline-first)
     await this.saveWorkoutLocally(newWorkout);
 
-    // Try to sync to Firestore
-    try {
-      await this.syncWorkoutToFirestore(newWorkout);
-    } catch {
-      console.log("Offline: Workout saved locally, will sync later");
-      await this.addToPendingUploads(newWorkout.id);
+    // Only try to sync if user is not anonymous
+    if (!this.isAnonymous) {
+      try {
+        await this.syncWorkoutToFirestore(newWorkout);
+      } catch {
+        console.log("Offline: Workout saved locally, will sync later");
+        await this.addToPendingUploads(newWorkout.id);
+      }
+    } else {
+      console.log("Anonymous user: Workout saved locally only, no sync");
     }
 
     return newWorkout;
@@ -76,10 +88,44 @@ class WorkoutService {
 
     await this.saveWorkoutLocally(updatedWorkout);
 
-    try {
-      await this.syncWorkoutToFirestore(updatedWorkout);
-    } catch {
+    // Only try to sync if user is not anonymous
+    if (!this.isAnonymous) {
+      // Try to sync with retry mechanism
+      let syncAttempts = 0;
+      const maxAttempts = 3;
+
+      while (syncAttempts < maxAttempts) {
+        try {
+          console.log(
+            `🔄 Sync attempt ${
+              syncAttempts + 1
+            }/${maxAttempts} for workout: ${workoutId}`
+          );
+          await this.syncWorkoutToFirestore(updatedWorkout);
+          console.log(
+            `✅ Workout synced successfully on attempt ${syncAttempts + 1}`
+          );
+          return; // Success, exit function
+        } catch (error) {
+          syncAttempts++;
+          console.log(`❌ Sync attempt ${syncAttempts} failed:`, error);
+
+          if (syncAttempts < maxAttempts) {
+            // Wait before retry (exponential backoff)
+            const delay = Math.pow(2, syncAttempts - 1) * 1000; // 1s, 2s, 4s
+            console.log(`⏳ Waiting ${delay}ms before retry...`);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+          }
+        }
+      }
+
+      // All attempts failed, add to pending
+      console.log(
+        `📋 All sync attempts failed, adding to pending uploads: ${workoutId}`
+      );
       await this.addToPendingUploads(workoutId);
+    } else {
+      console.log("Anonymous user: Workout updated locally only, no sync");
     }
   }
 
@@ -106,6 +152,9 @@ class WorkoutService {
   }
 
   async getWorkouts(): Promise<Workout[]> {
+    // Clean up pending uploads before getting workouts
+    await this.cleanupPendingUploads();
+
     // Get from local storage first
     const localWorkouts = await this.getWorkoutsLocally();
 
@@ -186,26 +235,318 @@ class WorkoutService {
 
   // ================== SYNC OPERATIONS ==================
 
-  async syncPendingData(): Promise<void> {
+  async diagnoseMobileConnectivity(): Promise<void> {
+    console.log("🔍 Diagnosing mobile connectivity...");
+
     try {
+      // Test 1: Basic fetch
+      console.log("🌐 Testing basic HTTP connectivity...");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch("https://httpbin.org/status/200", {
+        method: "GET",
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      console.log("✅ Basic HTTP test:", response.ok ? "PASS" : "FAIL");
+    } catch (error) {
+      console.log("❌ Basic HTTP test: FAIL -", error);
+    }
+
+    try {
+      // Test 2: Firebase connectivity
+      console.log("🔥 Testing Firebase connectivity...");
+      const testRef = doc(db, "connectivity-test", "mobile-test");
+      await getDoc(testRef);
+      console.log("✅ Firebase connectivity test: PASS");
+    } catch (error) {
+      console.log("❌ Firebase connectivity test: FAIL -", error);
+    }
+
+    try {
+      // Test 3: Auth state
+      console.log("🔐 Checking auth state...");
+      console.log("User ID:", this.userId);
+      console.log("✅ Auth state: PASS");
+    } catch (error) {
+      console.log("❌ Auth state test: FAIL -", error);
+    }
+  }
+
+  // ================== SYNC RATE LIMITING ==================
+
+  async canUserSync(isAnonymous: boolean): Promise<{
+    canSync: boolean;
+    reason?: string;
+    nextSyncTime?: Date;
+  }> {
+    // Anonymous users cannot sync at all
+    if (isAnonymous) {
+      return {
+        canSync: false,
+        reason:
+          "Anonymous users cannot sync workouts. Please create an account to enable sync.",
+      };
+    }
+
+    // Check rate limiting for authenticated users
+    const lastSyncTimeStr = await this.getLastSyncTime();
+    if (lastSyncTimeStr) {
+      const lastSyncTime = new Date(lastSyncTimeStr).getTime();
+      const timeSinceLastSync = Date.now() - lastSyncTime;
+      const timeRemaining = SYNC_COOLDOWN_MS - timeSinceLastSync;
+
+      if (timeRemaining > 0) {
+        const nextSyncTime = new Date(Date.now() + timeRemaining);
+        const hoursRemaining = Math.ceil(timeRemaining / (1000 * 60 * 60));
+
+        return {
+          canSync: false,
+          reason: `You can sync again in ${hoursRemaining} hour${
+            hoursRemaining !== 1 ? "s" : ""
+          }. This helps protect our servers from overuse.`,
+          nextSyncTime,
+        };
+      }
+    }
+
+    return { canSync: true };
+  }
+
+  async syncWithPermissionCheck(): Promise<{
+    success: boolean;
+    syncedCount: number;
+    errors: string[];
+  }> {
+    return this.syncPendingData();
+  }
+
+  async syncPendingData(options?: { forceSync?: boolean }): Promise<{
+    success: boolean;
+    syncedCount: number;
+    errors: string[];
+  }> {
+    const result = { success: false, syncedCount: 0, errors: [] as string[] };
+    const { forceSync = false } = options || {};
+
+    try {
+      console.log("🔄 Starting sync process...");
+
+      // Check sync permissions unless forced (for internal operations)
+      if (!forceSync) {
+        const syncPermission = await this.canUserSync(this.isAnonymous);
+        if (!syncPermission.canSync) {
+          const error = syncPermission.reason || "Sync not allowed";
+          console.log("🚫", error);
+          result.errors.push(error);
+          return result;
+        }
+        console.log("✅ Sync permission: GRANTED");
+      }
+
+      // Check network connectivity first
+      const networkAvailable = await this.isNetworkAvailable();
+      console.log("🌐 Network available:", networkAvailable);
+
+      if (!networkAvailable) {
+        const error = "No network connection available";
+        console.log("❌", error);
+        result.errors.push(error);
+        return result;
+      }
+
+      console.log("🔗 Enabling Firebase network...");
       await enableNetwork(db);
+
+      // Clean up pending uploads (remove deleted workouts)
+      console.log("🧹 Cleaning up pending uploads...");
+      await this.cleanupPendingUploads();
 
       // Sync pending workouts
       const pendingWorkouts = await this.getPendingUploads();
+      console.log(
+        `📋 Found ${pendingWorkouts.length} pending workouts to sync`
+      );
+
       for (const workoutId of pendingWorkouts) {
-        const workout = await this.getWorkoutById(workoutId);
-        if (workout) {
-          await this.syncWorkoutToFirestore(workout);
-          await this.removePendingUpload(workoutId);
+        try {
+          console.log(`🏋️ Syncing workout: ${workoutId}`);
+          const workout = await this.getWorkoutById(workoutId);
+          if (workout && !workout.isDeleted) {
+            await this.syncWorkoutToFirestore(workout);
+            await this.removePendingUpload(workoutId);
+            result.syncedCount++;
+            console.log(`✅ Successfully synced workout: ${workoutId}`);
+          } else {
+            // Remove invalid/deleted workout from pending list
+            await this.removePendingUpload(workoutId);
+            console.log(
+              `🗑️ Removed invalid workout from pending: ${workoutId}`
+            );
+          }
+        } catch (error) {
+          const errorMsg = `Failed to sync workout ${workoutId}: ${error}`;
+          console.error("❌", errorMsg);
+          result.errors.push(errorMsg);
         }
       }
 
       // Sync pending exercises
-      await this.syncPendingExercises();
+      try {
+        console.log("🏃 Syncing pending exercises...");
+        await this.syncPendingExercises();
+        console.log("✅ Exercises synced successfully");
+      } catch (error) {
+        const errorMsg = `Failed to sync exercises: ${error}`;
+        console.error("❌", errorMsg);
+        result.errors.push(errorMsg);
+      }
 
-      console.log("Sync completed successfully");
+      // Update last sync timestamp
+      console.log("⏰ Updating last sync timestamp...");
+      await this.updateLastSyncTime();
+
+      result.success = result.errors.length === 0;
+      console.log(
+        `🎉 Sync completed! Success: ${result.success}, Synced: ${result.syncedCount}, Errors: ${result.errors.length}`
+      );
+
+      return result;
     } catch (error) {
-      console.error("Sync failed:", error);
+      const errorMsg = `Sync failed: ${error}`;
+      console.error("💥 Sync process failed:", errorMsg);
+      result.errors.push(errorMsg);
+      return result;
+    }
+  }
+
+  async getPendingSyncCount(): Promise<{
+    workouts: number;
+    exercises: number;
+  }> {
+    try {
+      const pendingWorkoutIds = await this.getPendingUploads();
+      const pendingExercisesData = await AsyncStorage.getItem(
+        "pending_exercise_uploads"
+      );
+      const pendingExercises = pendingExercisesData
+        ? JSON.parse(pendingExercisesData)
+        : [];
+
+      // Filter out deleted workouts from pending count
+      let activePendingWorkouts = 0;
+      for (const workoutId of pendingWorkoutIds) {
+        const workout = await this.getWorkoutById(workoutId);
+        if (workout && !workout.isDeleted) {
+          activePendingWorkouts++;
+        }
+      }
+
+      return {
+        workouts: activePendingWorkouts,
+        exercises: pendingExercises.length,
+      };
+    } catch (error) {
+      console.error("Error getting pending sync count:", error);
+      return { workouts: 0, exercises: 0 };
+    }
+  }
+
+  async getConflictedWorkouts(): Promise<Workout[]> {
+    try {
+      const workouts = await this.getWorkoutsLocally();
+      // Return workouts that might have conflicts (not synced and have updatedAt different from createdAt)
+      return workouts.filter(
+        (w) => !w.synced && w.updatedAt !== w.createdAt && !w.isDeleted
+      );
+    } catch (error) {
+      console.error("Error getting conflicted workouts:", error);
+      return [];
+    }
+  }
+
+  async forceResync(): Promise<void> {
+    try {
+      // Clear local sync markers to force a full resync
+      const workouts = await this.getWorkoutsLocally();
+      const modifiedWorkouts = workouts.map((w) => ({ ...w, synced: false }));
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.WORKOUTS,
+        JSON.stringify(modifiedWorkouts)
+      );
+
+      // Add all workouts to pending uploads
+      for (const workout of modifiedWorkouts) {
+        if (!workout.isDeleted) {
+          await this.addToPendingUploads(workout.id);
+        }
+      }
+
+      // Trigger sync (forced, bypass rate limiting)
+      await this.syncPendingData({ forceSync: true });
+    } catch (error) {
+      console.error("Error forcing resync:", error);
+      throw error;
+    }
+  }
+
+  async getLastSyncTime(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem("last_sync_time");
+    } catch (error) {
+      console.error("Error getting last sync time:", error);
+      return null;
+    }
+  }
+
+  private async updateLastSyncTime(): Promise<void> {
+    try {
+      await AsyncStorage.setItem("last_sync_time", new Date().toISOString());
+    } catch (error) {
+      console.error("Error updating last sync time:", error);
+    }
+  }
+
+  private async isNetworkAvailable(): Promise<boolean> {
+    try {
+      // Multiple approaches to check Firebase connectivity
+
+      // Method 1: Try a simple HTTP request first
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+        const response = await fetch("https://www.google.com/", {
+          method: "HEAD",
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          return true;
+        }
+      } catch {
+        // Continue to Firebase test
+      }
+
+      // Method 2: Try to access Firestore with shorter timeout
+      const testRef = doc(db, "connectivity", "test");
+
+      // Create a promise that will timeout after 5 seconds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Firebase timeout")), 5000);
+      });
+
+      const firestorePromise = getDoc(testRef);
+
+      await Promise.race([firestorePromise, timeoutPromise]);
+      return true;
+    } catch (error) {
+      console.log("Network availability check failed:", error);
+      return false;
     }
   }
 
@@ -306,16 +647,99 @@ class WorkoutService {
     }
   }
 
-  private async syncWorkoutToFirestore(workout: Workout): Promise<void> {
-    const workoutRef = doc(db, "workouts", workout.id);
-    await setDoc(workoutRef, {
-      ...workout,
-      synced: true,
-    });
+  private cleanDataForFirestore(data: any): any {
+    if (data === null || data === undefined) {
+      return null;
+    }
 
-    // Update local copy to mark as synced
-    workout.synced = true;
-    await this.saveWorkoutLocally(workout);
+    if (Array.isArray(data)) {
+      return data.map((item) => this.cleanDataForFirestore(item));
+    }
+
+    if (typeof data === "object") {
+      const cleaned: any = {};
+      for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+          const value = data[key];
+          cleaned[key] =
+            value === undefined ? null : this.cleanDataForFirestore(value);
+        }
+      }
+      return cleaned;
+    }
+
+    return data;
+  }
+
+  private async syncWorkoutToFirestore(workout: Workout): Promise<void> {
+    try {
+      console.log(`🔄 Syncing workout to Firestore: ${workout.id}`);
+
+      // Validate required fields
+      if (!workout.id || !workout.userId || !workout.title) {
+        throw new Error(`Invalid workout data: missing required fields`);
+      }
+
+      const workoutRef = doc(db, "workouts", workout.id);
+
+      // Ensure all required fields have valid values
+      const rawWorkoutData = {
+        ...workout,
+        synced: true,
+        // Ensure required fields are not undefined
+        exercises: workout.exercises || [],
+        cardioSessions: workout.cardioSessions || [],
+        title: workout.title || "Untitled Workout",
+        date: workout.date || new Date().toISOString(),
+        createdAt: workout.createdAt || new Date().toISOString(),
+        updatedAt: workout.updatedAt || new Date().toISOString(),
+      };
+
+      // Clean the workout data to replace undefined values with null
+      const cleanedWorkoutData = this.cleanDataForFirestore(rawWorkoutData);
+
+      console.log(`📤 Uploading cleaned workout data...`);
+      console.log(`🧹 Cleaned data preview:`, {
+        id: cleanedWorkoutData.id,
+        title: cleanedWorkoutData.title,
+        notes:
+          cleanedWorkoutData.notes === null
+            ? "null"
+            : `"${cleanedWorkoutData.notes}"`,
+        duration:
+          cleanedWorkoutData.duration === null
+            ? "null"
+            : cleanedWorkoutData.duration,
+        exercises: cleanedWorkoutData.exercises?.length || 0,
+        cardioSessions: cleanedWorkoutData.cardioSessions?.length || 0,
+        isDeleted:
+          cleanedWorkoutData.isDeleted === null
+            ? "null"
+            : cleanedWorkoutData.isDeleted,
+      });
+
+      await setDoc(workoutRef, cleanedWorkoutData);
+      console.log(`✅ Workout uploaded to Firestore successfully`);
+
+      // Update local copy to mark as synced
+      workout.synced = true;
+      await this.saveWorkoutLocally(workout);
+      console.log(`💾 Local workout marked as synced`);
+    } catch (error) {
+      console.error(`❌ Failed to sync workout to Firestore:`, error);
+
+      // Provide more detailed error information
+      if (error instanceof Error) {
+        console.error(`Error details:`, {
+          message: error.message,
+          name: error.name,
+          workoutId: workout.id,
+          workoutTitle: workout.title,
+        });
+      }
+
+      throw error;
+    }
   }
 
   private async syncWorkoutsFromFirestore(): Promise<void> {
@@ -413,6 +837,29 @@ class WorkoutService {
     );
   }
 
+  private async cleanupPendingUploads(): Promise<void> {
+    try {
+      const pendingIds = await this.getPendingUploads();
+      const validIds: string[] = [];
+
+      // Only keep IDs of workouts that exist and are not deleted
+      for (const workoutId of pendingIds) {
+        const workout = await this.getWorkoutById(workoutId);
+        if (workout && !workout.isDeleted) {
+          validIds.push(workoutId);
+        }
+      }
+
+      // Update the pending uploads list with only valid IDs
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.PENDING_UPLOADS,
+        JSON.stringify(validIds)
+      );
+    } catch (error) {
+      console.error("Error cleaning up pending uploads:", error);
+    }
+  }
+
   private async removeWorkoutLocally(workoutId: string): Promise<void> {
     const workouts = await this.getWorkoutsLocally();
     const filtered = workouts.filter((w) => w.id !== workoutId);
@@ -430,23 +877,141 @@ class WorkoutService {
       merged.set(workout.id, workout);
     });
 
-    // Overlay local changes (unsynced items take precedence)
-    localWorkouts.forEach((workout) => {
-      if (!workout.synced || !merged.has(workout.id)) {
-        merged.set(workout.id, workout);
+    // Handle conflicts with proper merging strategy
+    localWorkouts.forEach((localWorkout) => {
+      const firestoreWorkout = merged.get(localWorkout.id);
+
+      if (!firestoreWorkout) {
+        // New local workout, keep it
+        merged.set(localWorkout.id, localWorkout);
+      } else if (!localWorkout.synced) {
+        // Local changes exist, check for conflicts
+        const resolvedWorkout = this.resolveWorkoutConflict(
+          localWorkout,
+          firestoreWorkout
+        );
+        merged.set(localWorkout.id, resolvedWorkout);
       }
+      // If synced and exists remotely, remote version takes precedence (already in merged)
     });
 
-    return Array.from(merged.values());
+    return Array.from(merged.values()).filter((w) => !w.isDeleted);
+  }
+
+  private resolveWorkoutConflict(
+    localWorkout: Workout,
+    remoteWorkout: Workout
+  ): Workout {
+    // Use the most recently updated version as base
+    const localUpdated = new Date(localWorkout.updatedAt).getTime();
+    const remoteUpdated = new Date(remoteWorkout.updatedAt).getTime();
+
+    if (localUpdated > remoteUpdated) {
+      // Local is newer, keep local changes but mark as needing sync
+      return {
+        ...localWorkout,
+        synced: false,
+      };
+    } else if (remoteUpdated > localUpdated) {
+      // Remote is newer, use remote version
+      return {
+        ...remoteWorkout,
+        synced: true,
+      };
+    } else {
+      // Same timestamp, merge intelligently
+      return {
+        ...remoteWorkout, // Use remote as base
+        // Keep local title and notes if they were modified
+        title:
+          localWorkout.title !== remoteWorkout.title
+            ? localWorkout.title
+            : remoteWorkout.title,
+        notes:
+          localWorkout.notes !== remoteWorkout.notes
+            ? localWorkout.notes
+            : remoteWorkout.notes,
+        // For exercises and cardio, prefer the version with more data
+        exercises:
+          localWorkout.exercises.length >= remoteWorkout.exercises.length
+            ? localWorkout.exercises
+            : remoteWorkout.exercises,
+        cardioSessions:
+          localWorkout.cardioSessions.length >=
+          remoteWorkout.cardioSessions.length
+            ? localWorkout.cardioSessions
+            : remoteWorkout.cardioSessions,
+        updatedAt: new Date().toISOString(),
+        synced: false, // Mark as needing sync due to merge
+      };
+    }
   }
 
   private async addToPendingExerciseUploads(exercise: Exercise): Promise<void> {
-    // Implementation for pending exercise uploads
-    // Similar to workout pending uploads
+    try {
+      const pending = await AsyncStorage.getItem("pending_exercise_uploads");
+      const pendingList = pending ? JSON.parse(pending) : [];
+
+      // Check if exercise is already in pending list
+      if (!pendingList.find((e: Exercise) => e.id === exercise.id)) {
+        pendingList.push(exercise);
+        await AsyncStorage.setItem(
+          "pending_exercise_uploads",
+          JSON.stringify(pendingList)
+        );
+      }
+    } catch (error) {
+      console.error("Error adding exercise to pending uploads:", error);
+    }
   }
 
   private async syncPendingExercises(): Promise<void> {
-    // Implementation for syncing pending exercises
+    try {
+      const pending = await AsyncStorage.getItem("pending_exercise_uploads");
+      if (!pending) return;
+
+      const pendingExercises: Exercise[] = JSON.parse(pending);
+      const syncedExercises: Exercise[] = [];
+
+      for (const exercise of pendingExercises) {
+        try {
+          // Save to user's custom exercises collection
+          await addDoc(
+            collection(db, "exercises", "users", this.userId),
+            exercise
+          );
+
+          // Also add to admin review queue
+          await addDoc(collection(db, "exercise_review_queue"), {
+            ...exercise,
+            submittedAt: new Date().toISOString(),
+            userId: this.userId,
+          });
+
+          syncedExercises.push(exercise);
+        } catch (error) {
+          console.error(`Failed to sync exercise ${exercise.id}:`, error);
+        }
+      }
+
+      // Remove synced exercises from pending list
+      if (syncedExercises.length > 0) {
+        const remainingPending = pendingExercises.filter(
+          (e) => !syncedExercises.find((synced) => synced.id === e.id)
+        );
+
+        if (remainingPending.length === 0) {
+          await AsyncStorage.removeItem("pending_exercise_uploads");
+        } else {
+          await AsyncStorage.setItem(
+            "pending_exercise_uploads",
+            JSON.stringify(remainingPending)
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error syncing pending exercises:", error);
+    }
   }
 }
 

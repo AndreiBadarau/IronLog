@@ -42,7 +42,7 @@ export default function WorkoutsScreen() {
   const [workoutToDelete, setWorkoutToDelete] = useState<string | null>(null);
 
   const workoutService = useMemo(
-    () => (user ? new WorkoutService(user.uid) : null),
+    () => (user ? new WorkoutService(user.uid, user.isAnonymous) : null),
     [user]
   );
 
@@ -52,9 +52,11 @@ export default function WorkoutsScreen() {
     try {
       setLoading(true);
       const userWorkouts = await workoutService.getWorkouts();
-      // Sort by date (newest first)
+      // Sort by createdAt (newest first)
       const sortedWorkouts = userWorkouts.sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        (a, b) =>
+          new Date(b.createdAt || b.date).getTime() -
+          new Date(a.createdAt || a.date).getTime()
       );
       setWorkouts(sortedWorkouts);
 
@@ -73,18 +75,6 @@ export default function WorkoutsScreen() {
     }
   }, [workoutService]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadWorkouts();
-    }, [loadWorkouts])
-  );
-
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await loadWorkouts();
-    setRefreshing(false);
-  }, [loadWorkouts]);
-
   const updateDraftStatus = useCallback(async () => {
     const draftData = await AsyncStorage.getItem("current_draft_workout");
     if (draftData) {
@@ -93,6 +83,17 @@ export default function WorkoutsScreen() {
       setExistingDraft(null);
     }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadWorkouts();
+    }, [loadWorkouts])
+  );
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadWorkouts();
+    setRefreshing(false);
+  }, [loadWorkouts]);
 
   const handleNewWorkout = () => {
     setShowActiveWorkout(true);
@@ -190,22 +191,11 @@ export default function WorkoutsScreen() {
           </Text>
         </View>
       )}
-
-      {!workout.synced && (
-        <View style={styles.syncStatus}>
-          <Ionicons name="cloud-offline-outline" size={14} color="#FFA500" />
-          <Text style={styles.syncText}>Pending sync</Text>
-        </View>
-      )}
     </TouchableOpacity>
   );
 
   const renderHeader = () => (
     <View style={styles.header}>
-      {/* <View style={styles.titleContainer}>
-        <Text style={styles.screenTitle}>Your Workouts</Text>
-      </View> */}
-
       <View style={styles.buttonContainer}>
         {existingDraft && (
           <TouchableOpacity
@@ -421,13 +411,9 @@ function WorkoutDetailModal({
     return (
       sets
         .map((set: any, index: number) => {
-          if (set?.isBodyweight) {
-            return `Set ${index + 1}: ${set?.reps || 0} reps (bodyweight)`;
-          } else {
-            return `Set ${index + 1}: ${set?.reps || 0} reps × ${
-              set?.weight || 0
-            } lbs`;
-          }
+          return `Set ${index + 1}: ${set?.reps || 0} reps × ${
+            set?.weight || 0
+          } lbs`;
         })
         .join("\n") || "No sets recorded"
     );
@@ -662,6 +648,22 @@ function WorkoutDetailModal({
 
                       {isEditing ? (
                         <View style={styles.editingSetsContainer}>
+                          {/* Sets Header */}
+                          {(exercise.sets || []).length > 0 && (
+                            <View style={styles.setsHeaderSmall}>
+                              <Text style={styles.setHeaderLabelSmall}>
+                                Set
+                              </Text>
+                              <Text style={styles.setHeaderLabelSmall}>
+                                Reps
+                              </Text>
+                              <Text style={styles.setHeaderLabelSmall}>
+                                Weight
+                              </Text>
+                              <View style={styles.setHeaderSpacerSmall} />
+                            </View>
+                          )}
+
                           {(exercise.sets || []).map((set, setIndex) => (
                             <View
                               key={set.id || `set-${setIndex}`}
@@ -679,48 +681,23 @@ function WorkoutDetailModal({
                                     reps: parseInt(text) || 0,
                                   })
                                 }
-                                placeholder="Reps"
+                                placeholder="0"
                                 placeholderTextColor="#888"
                                 keyboardType="numeric"
                               />
 
-                              <TouchableOpacity
-                                style={[
-                                  styles.bodyweightToggleSmall,
-                                  set.isBodyweight &&
-                                    styles.bodyweightActiveSmall,
-                                ]}
-                                onPress={() =>
+                              <TextInput
+                                style={styles.setEditInput}
+                                value={set.weight?.toString() || ""}
+                                onChangeText={(text) =>
                                   updateSet(exercise.id, set.id, {
-                                    isBodyweight: !set.isBodyweight,
+                                    weight: parseFloat(text) || 0,
                                   })
                                 }
-                              >
-                                <Text
-                                  style={[
-                                    styles.bodyweightTextSmall,
-                                    set.isBodyweight &&
-                                      styles.bodyweightTextActiveSmall,
-                                  ]}
-                                >
-                                  BW
-                                </Text>
-                              </TouchableOpacity>
-
-                              {!set.isBodyweight && (
-                                <TextInput
-                                  style={styles.setEditInput}
-                                  value={set.weight?.toString() || ""}
-                                  onChangeText={(text) =>
-                                    updateSet(exercise.id, set.id, {
-                                      weight: parseFloat(text) || 0,
-                                    })
-                                  }
-                                  placeholder="Weight"
-                                  placeholderTextColor="#888"
-                                  keyboardType="numeric"
-                                />
-                              )}
+                                placeholder="0"
+                                placeholderTextColor="#888"
+                                keyboardType="numeric"
+                              />
 
                               <TouchableOpacity
                                 onPress={() => removeSet(exercise.id, set.id)}
@@ -994,15 +971,7 @@ const styles = StyleSheet.create({
     color: "#888",
     marginBottom: 8,
   },
-  syncStatus: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  syncText: {
-    fontSize: 12,
-    color: "#FFA500",
-  },
+
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -1212,12 +1181,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   setNumber: {
+    flex: 1,
     fontSize: 14,
     fontWeight: "bold",
     color: "#FFF",
-    width: 24,
     textAlign: "center",
-    marginRight: 8,
   },
   setEditInput: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
@@ -1230,24 +1198,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginHorizontal: 4,
   },
-  bodyweightToggleSmall: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginHorizontal: 4,
-  },
-  bodyweightActiveSmall: {
-    backgroundColor: "#2EA0FF",
-  },
-  bodyweightTextSmall: {
-    fontSize: 12,
-    color: "#FFF",
-    fontWeight: "bold",
-  },
-  bodyweightTextActiveSmall: {
-    color: "#FFF",
-  },
+
   removeSetButtonSmall: {
     padding: 2,
     marginLeft: 8,
@@ -1306,5 +1257,21 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: "rgba(255, 107, 107, 0.1)",
     marginLeft: 8,
+  },
+  setsHeaderSmall: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+    paddingHorizontal: 8,
+  },
+  setHeaderLabelSmall: {
+    flex: 1,
+    fontSize: 10,
+    color: "#888",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  setHeaderSpacerSmall: {
+    width: 12, // Same width as remove button
   },
 });
