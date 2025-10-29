@@ -631,6 +631,7 @@ export default function DraftWorkoutBuilder({
           message="Are you sure you want to remove this exercise? This action cannot be undone."
           confirmText="Remove"
           cancelText="Cancel"
+          intent="danger"
           onConfirm={confirmRemoveExercise}
           onCancel={() => {
             setShowRemoveExerciseConfirm(false);
@@ -645,6 +646,7 @@ export default function DraftWorkoutBuilder({
           message="Are you sure you want to remove this cardio session? This action cannot be undone."
           confirmText="Remove"
           cancelText="Cancel"
+          intent="danger"
           onConfirm={confirmRemoveCardio}
           onCancel={() => {
             setShowRemoveCardioConfirm(false);
@@ -670,6 +672,7 @@ export default function DraftWorkoutBuilder({
           message="Are you sure? All unsaved changes will be lost."
           confirmText="Discard"
           cancelText="Keep Draft"
+          intent="danger"
           onConfirm={confirmDiscardDraft}
           onCancel={() => setShowDiscardConfirm(false)}
         />
@@ -679,8 +682,9 @@ export default function DraftWorkoutBuilder({
           visible={showSaveDraftConfirm}
           title="Save Draft?"
           message="Your workout will be saved as a draft and you can continue it later."
-          confirmText="Discard"
-          cancelText="Save Draft"
+          confirmText="Save Draft"
+          cancelText="Discard"
+          intent="success"
           onConfirm={() => {
             setShowSaveDraftConfirm(false);
             onClose();

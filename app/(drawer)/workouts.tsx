@@ -339,6 +339,7 @@ export default function WorkoutsScreen() {
         message="Are you sure you want to delete this workout? This action cannot be undone."
         confirmText="Delete"
         cancelText="Cancel"
+        intent="danger"
         onConfirm={confirmDeleteWorkout}
         onCancel={() => {
           setShowDeleteConfirm(false);
@@ -877,6 +878,7 @@ function WorkoutDetailModal({
           message="Are you sure you want to remove this exercise? This action cannot be undone."
           confirmText="Remove"
           cancelText="Cancel"
+          intent="danger"
           onConfirm={confirmRemoveExercise}
           onCancel={() => {
             setShowRemoveExerciseConfirm(false);
@@ -891,6 +893,7 @@ function WorkoutDetailModal({
           message="Are you sure you want to remove this cardio session? This action cannot be undone."
           confirmText="Remove"
           cancelText="Cancel"
+          intent="danger"
           onConfirm={confirmRemoveCardio}
           onCancel={() => {
             setShowRemoveCardioConfirm(false);
