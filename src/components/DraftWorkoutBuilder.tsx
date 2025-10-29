@@ -22,6 +22,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import ConfirmDialog from "./ConfirmDialog";
 
 interface DraftWorkoutBuilderProps {
   visible: boolean;
@@ -42,6 +44,7 @@ export default function DraftWorkoutBuilder({
   workoutService,
   existingDraft,
 }: DraftWorkoutBuilderProps) {
+  const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState<DraftWorkout | null>(
     existingDraft || null
   );
@@ -49,6 +52,16 @@ export default function DraftWorkoutBuilder({
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
+
+  // Confirm dialog state
+  const [showRemoveExerciseConfirm, setShowRemoveExerciseConfirm] =
+    useState(false);
+  const [exerciseToRemove, setExerciseToRemove] = useState<string | null>(null);
+  const [showRemoveCardioConfirm, setShowRemoveCardioConfirm] = useState(false);
+  const [cardioToRemove, setCardioToRemove] = useState<string | null>(null);
+  const [showEmptyWorkoutDialog, setShowEmptyWorkoutDialog] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [showSaveDraftConfirm, setShowSaveDraftConfirm] = useState(false);
 
   const initializeNewDraft = useCallback(() => {
     const newDraft: DraftWorkout = {
@@ -193,36 +206,32 @@ export default function DraftWorkoutBuilder({
   const removeExercise = useCallback(
     (exerciseId: string) => {
       if (!draft) return;
-
-      Alert.alert(
-        "Remove Exercise",
-        "Are you sure you want to remove this exercise?",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Remove",
-            style: "destructive",
-            onPress: () => {
-              setDraft((currentDraft) => {
-                if (!currentDraft) return currentDraft;
-
-                const updatedExercises = currentDraft.exercises.filter(
-                  (ex) => ex.id !== exerciseId
-                );
-
-                return {
-                  ...currentDraft,
-                  exercises: updatedExercises,
-                  lastModified: new Date().toISOString(),
-                };
-              });
-            },
-          },
-        ]
-      );
+      setExerciseToRemove(exerciseId);
+      setShowRemoveExerciseConfirm(true);
     },
     [draft]
   );
+
+  const confirmRemoveExercise = () => {
+    if (!exerciseToRemove) return;
+
+    setDraft((currentDraft) => {
+      if (!currentDraft) return currentDraft;
+
+      const updatedExercises = currentDraft.exercises.filter(
+        (ex) => ex.id !== exerciseToRemove
+      );
+
+      return {
+        ...currentDraft,
+        exercises: updatedExercises,
+        lastModified: new Date().toISOString(),
+      };
+    });
+
+    setShowRemoveExerciseConfirm(false);
+    setExerciseToRemove(null);
+  };
 
   const addSet = (exerciseId: string) => {
     if (!draft) return;
@@ -316,45 +325,38 @@ export default function DraftWorkoutBuilder({
   const removeCardioSession = useCallback(
     (sessionId: string) => {
       if (!draft) return;
-
-      Alert.alert(
-        "Remove Cardio Session",
-        "Are you sure you want to remove this cardio session?",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Remove",
-            style: "destructive",
-            onPress: () => {
-              setDraft((currentDraft) => {
-                if (!currentDraft) return currentDraft;
-
-                const updatedSessions = currentDraft.cardioSessions.filter(
-                  (session) => session.id !== sessionId
-                );
-
-                return {
-                  ...currentDraft,
-                  cardioSessions: updatedSessions,
-                  lastModified: new Date().toISOString(),
-                };
-              });
-            },
-          },
-        ]
-      );
+      setCardioToRemove(sessionId);
+      setShowRemoveCardioConfirm(true);
     },
     [draft]
   );
+
+  const confirmRemoveCardio = () => {
+    if (!cardioToRemove) return;
+
+    setDraft((currentDraft) => {
+      if (!currentDraft) return currentDraft;
+
+      const updatedSessions = currentDraft.cardioSessions.filter(
+        (session) => session.id !== cardioToRemove
+      );
+
+      return {
+        ...currentDraft,
+        cardioSessions: updatedSessions,
+        lastModified: new Date().toISOString(),
+      };
+    });
+
+    setShowRemoveCardioConfirm(false);
+    setCardioToRemove(null);
+  };
 
   const saveWorkout = async () => {
     if (!draft) return;
 
     if (draft.exercises.length === 0 && draft.cardioSessions.length === 0) {
-      Alert.alert(
-        "Empty Workout",
-        "Please add at least one exercise or cardio session."
-      );
+      setShowEmptyWorkoutDialog(true);
       return;
     }
 
@@ -403,26 +405,18 @@ export default function DraftWorkoutBuilder({
   };
 
   const discardDraft = () => {
-    Alert.alert(
-      "Discard Draft",
-      "Are you sure? All unsaved changes will be lost.",
-      [
-        { text: "Keep Draft", style: "cancel" },
-        {
-          text: "Discard",
-          style: "destructive",
-          onPress: async () => {
-            setIsDiscarding(true);
-            await AsyncStorage.removeItem(DRAFT_STORAGE_KEY);
-            setDraft(null);
-            if (onDraftUpdated) {
-              onDraftUpdated();
-            }
-            onClose();
-          },
-        },
-      ]
-    );
+    setShowDiscardConfirm(true);
+  };
+
+  const confirmDiscardDraft = async () => {
+    setIsDiscarding(true);
+    await AsyncStorage.removeItem(DRAFT_STORAGE_KEY);
+    setDraft(null);
+    if (onDraftUpdated) {
+      onDraftUpdated();
+    }
+    setShowDiscardConfirm(false);
+    onClose();
   };
 
   const handleClose = async () => {
@@ -440,21 +434,7 @@ export default function DraftWorkoutBuilder({
       return;
     }
 
-    Alert.alert(
-      "Save Draft?",
-      "Your workout will be saved as a draft and you can continue it later.",
-      [
-        {
-          text: "Discard",
-          style: "destructive",
-          onPress: discardDraft,
-        },
-        {
-          text: "Save Draft",
-          onPress: onClose,
-        },
-      ]
-    );
+    setShowSaveDraftConfirm(true);
   };
 
   if (!draft) return null;
@@ -463,12 +443,12 @@ export default function DraftWorkoutBuilder({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="fullScreen"
       onRequestClose={handleClose}
     >
-      <View style={styles.container}>
+      <View style={[styles.container]}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
           <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
             <Ionicons name="close" size={24} color="#fff" />
           </TouchableOpacity>
@@ -496,7 +476,7 @@ export default function DraftWorkoutBuilder({
               <Text style={styles.sectionTitle}>Workout Title</Text>
               <TextInput
                 style={styles.titleInput}
-                value={draft.title}
+                value={draft.title || ""}
                 onChangeText={(text) => updateDraft({ title: text })}
                 placeholder="Enter workout title"
                 placeholderTextColor="#888"
@@ -507,7 +487,7 @@ export default function DraftWorkoutBuilder({
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>
-                  Exercises ({draft.exercises.length})
+                  Exercises ({draft.exercises?.length || 0})
                 </Text>
                 <TouchableOpacity
                   onPress={() => setShowExerciseSelector(true)}
@@ -518,7 +498,7 @@ export default function DraftWorkoutBuilder({
                 </TouchableOpacity>
               </View>
 
-              {draft.exercises.map((exercise) => {
+              {(draft.exercises || []).map((exercise) => {
                 const exerciseData = availableExercises.find(
                   (ex) => ex.id === exercise.exerciseId
                 );
@@ -550,7 +530,7 @@ export default function DraftWorkoutBuilder({
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>
-                  Cardio ({draft.cardioSessions.length})
+                  Cardio ({draft.cardioSessions?.length || 0})
                 </Text>
                 <TouchableOpacity
                   onPress={addCardioSession}
@@ -561,7 +541,7 @@ export default function DraftWorkoutBuilder({
                 </TouchableOpacity>
               </View>
 
-              {draft.cardioSessions.map((session) => (
+              {(draft.cardioSessions || []).map((session) => (
                 <CardioCard
                   key={session.id}
                   session={session}
@@ -596,10 +576,12 @@ export default function DraftWorkoutBuilder({
         <Modal
           visible={showExerciseSelector}
           animationType="slide"
-          presentationStyle="pageSheet"
+          presentationStyle="fullScreen"
         >
           <View style={styles.selectorContainer}>
-            <View style={styles.selectorHeader}>
+            <View
+              style={[styles.selectorHeader, { paddingTop: insets.top + 16 }]}
+            >
               <Text style={styles.selectorTitle}>Select Exercise</Text>
               <TouchableOpacity onPress={() => setShowExerciseSelector(false)}>
                 <Ionicons name="close" size={24} color="#fff" />
@@ -618,11 +600,11 @@ export default function DraftWorkoutBuilder({
                 >
                   <View style={styles.exerciseOptionHeader}>
                     <Text style={styles.exerciseOptionName}>
-                      {exercise.name}
+                      {exercise.name || "Unknown Exercise"}
                     </Text>
                     <View style={styles.exerciseOptionMeta}>
                       <Text style={styles.popularityText}>
-                        ★ {exercise.popularity}
+                        ★ {exercise.popularity || 0}
                       </Text>
                       {exercise.bw === 1 && (
                         <View style={styles.bodyweightIndicator}>
@@ -631,7 +613,7 @@ export default function DraftWorkoutBuilder({
                       )}
                     </View>
                   </View>
-                  {exercise.category && (
+                  {!!exercise.category && (
                     <Text style={styles.exerciseOptionCategory}>
                       {exercise.category}
                     </Text>
@@ -641,6 +623,73 @@ export default function DraftWorkoutBuilder({
             />
           </View>
         </Modal>
+
+        {/* Remove Exercise Confirmation */}
+        <ConfirmDialog
+          visible={showRemoveExerciseConfirm}
+          title="Remove Exercise"
+          message="Are you sure you want to remove this exercise? This action cannot be undone."
+          confirmText="Remove"
+          cancelText="Cancel"
+          onConfirm={confirmRemoveExercise}
+          onCancel={() => {
+            setShowRemoveExerciseConfirm(false);
+            setExerciseToRemove(null);
+          }}
+        />
+
+        {/* Remove Cardio Session Confirmation */}
+        <ConfirmDialog
+          visible={showRemoveCardioConfirm}
+          title="Remove Cardio Session"
+          message="Are you sure you want to remove this cardio session? This action cannot be undone."
+          confirmText="Remove"
+          cancelText="Cancel"
+          onConfirm={confirmRemoveCardio}
+          onCancel={() => {
+            setShowRemoveCardioConfirm(false);
+            setCardioToRemove(null);
+          }}
+        />
+
+        {/* Empty Workout Dialog */}
+        <ConfirmDialog
+          visible={showEmptyWorkoutDialog}
+          title="Empty Workout"
+          message="Please add at least one exercise or cardio session before saving."
+          confirmText="OK"
+          cancelText=""
+          onConfirm={() => setShowEmptyWorkoutDialog(false)}
+          onCancel={() => setShowEmptyWorkoutDialog(false)}
+        />
+
+        {/* Discard Draft Confirmation */}
+        <ConfirmDialog
+          visible={showDiscardConfirm}
+          title="Discard Draft"
+          message="Are you sure? All unsaved changes will be lost."
+          confirmText="Discard"
+          cancelText="Keep Draft"
+          onConfirm={confirmDiscardDraft}
+          onCancel={() => setShowDiscardConfirm(false)}
+        />
+
+        {/* Save Draft Confirmation */}
+        <ConfirmDialog
+          visible={showSaveDraftConfirm}
+          title="Save Draft?"
+          message="Your workout will be saved as a draft and you can continue it later."
+          confirmText="Discard"
+          cancelText="Save Draft"
+          onConfirm={() => {
+            setShowSaveDraftConfirm(false);
+            onClose();
+          }}
+          onCancel={() => {
+            setShowSaveDraftConfirm(false);
+            discardDraft();
+          }}
+        />
       </View>
     </Modal>
   );
@@ -670,7 +719,9 @@ function ExerciseCard({
     <View style={styles.exerciseCard}>
       <View style={styles.exerciseHeader}>
         <View style={styles.exerciseInfo}>
-          <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+          <Text style={styles.exerciseName}>
+            {exercise.exerciseName || "Unknown Exercise"}
+          </Text>
           {exerciseData?.bw === 1 && (
             <View style={styles.bodyweightBadge}>
               <Text style={styles.bodyweightBadgeText}>Bodyweight</Text>
@@ -683,7 +734,7 @@ function ExerciseCard({
       </View>
 
       {/* Sets */}
-      {exercise.sets.map((set, setIndex) => (
+      {(exercise.sets || []).map((set, setIndex) => (
         <View key={set.id} style={styles.setRow}>
           <Text style={styles.setNumber}>{setIndex + 1}</Text>
 
@@ -796,7 +847,7 @@ function CardioCard({ session, onUpdate, onRemove }: CardioCardProps) {
         <Text style={styles.cardioLabel}>Duration:</Text>
         <TextInput
           style={styles.cardioInput}
-          value={session.duration.toString()}
+          value={session.duration?.toString() || ""}
           onChangeText={(text) => onUpdate({ duration: parseInt(text) || 0 })}
           placeholder="Minutes"
           placeholderTextColor="#888"
@@ -878,7 +929,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingBottom: 16,
     backgroundColor: "#111",
     borderBottomWidth: 1,
     borderBottomColor: "#333",
@@ -893,8 +944,8 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: "#2EA0FF",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
     borderRadius: 8,
     alignItems: "center",
   },
@@ -1088,7 +1139,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingBottom: 16,
     backgroundColor: "#111",
     borderBottomWidth: 1,
     borderBottomColor: "#333",

@@ -43,3 +43,10 @@ app-example
 /android
 
 .env.local
+assets/serviceAccountKey.json
+seed/gym_exercises.json
+seed/package-lock.json
+seed/package.json
+seed/seed-exercises.js
+seed/serviceAccountKey.json
+google-services.json
