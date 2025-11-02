@@ -1,3 +1,4 @@
+import { defaultTitle } from "@/src/services/titleGenerator";
 import { WorkoutService } from "@/src/services/workoutService";
 import { DraftWorkout } from "@/src/types/draftWorkout";
 import {
@@ -53,6 +54,9 @@ export default function DraftWorkoutBuilder({
   const [saving, setSaving] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
 
+  // Title management state
+  const [hasCustomTitle, setHasCustomTitle] = useState(false);
+
   // Confirm dialog state
   const [showRemoveExerciseConfirm, setShowRemoveExerciseConfirm] =
     useState(false);
@@ -63,10 +67,45 @@ export default function DraftWorkoutBuilder({
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [showSaveDraftConfirm, setShowSaveDraftConfirm] = useState(false);
 
+  // Helper function to generate time-of-day title
+  const getTimeOfDayTitle = useCallback(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) {
+      return "Morning Workout";
+    } else if (hour < 18) {
+      return "Afternoon Workout";
+    } else {
+      return "Evening Workout";
+    }
+  }, []);
+
+  // Helper function to generate pattern-based title
+  const generatePatternTitle = useCallback(
+    (draftData: DraftWorkout) => {
+      if (!draftData.exercises.length && !draftData.cardioSessions.length) {
+        return getTimeOfDayTitle();
+      }
+
+      // Convert draft format to workout format for title generator
+      const workoutForTitle = {
+        createdAt: new Date(draftData.createdAt),
+        exercises: draftData.exercises.map((ex) => ({
+          exerciseName: ex.exerciseName,
+          sets: ex.sets?.length || 0,
+        })),
+        cardioSessions: draftData.cardioSessions,
+        title: draftData.title,
+      };
+
+      return defaultTitle(workoutForTitle);
+    },
+    [getTimeOfDayTitle]
+  );
+
   const initializeNewDraft = useCallback(() => {
     const newDraft: DraftWorkout = {
       id: `draft_${Date.now()}`,
-      title: `Workout - ${new Date().toLocaleDateString()}`,
+      title: getTimeOfDayTitle(), // Stage 1: Time-of-day based title
       date: new Date().toISOString().split("T")[0],
       exercises: [],
       cardioSessions: [],
@@ -75,6 +114,7 @@ export default function DraftWorkoutBuilder({
       lastModified: new Date().toISOString(),
     };
     setDraft(newDraft);
+    setHasCustomTitle(false); // Mark as auto-generated title
 
     // Immediately save the new draft to storage
     setTimeout(async () => {
@@ -87,7 +127,7 @@ export default function DraftWorkoutBuilder({
         console.error("Error saving initial draft:", error);
       }
     }, 100);
-  }, [onDraftUpdated]);
+  }, [onDraftUpdated, getTimeOfDayTitle]);
 
   const loadExercises = useCallback(async () => {
     try {
@@ -132,6 +172,51 @@ export default function DraftWorkoutBuilder({
     }
   }, [visible, draft, loadExercises, initializeNewDraft]);
 
+  // Handle existing draft and determine if title is custom
+  useEffect(() => {
+    if (existingDraft && visible) {
+      setDraft(existingDraft);
+
+      // Check if the existing draft has a custom title
+      // If the title matches any time-of-day pattern or is auto-generated, it's not custom
+      const timeOfDayPatterns = [
+        "Morning Workout",
+        "Afternoon Workout",
+        "Evening Workout",
+      ];
+      const isTimeOfDayTitle = timeOfDayPatterns.includes(existingDraft.title);
+      const isOldDateFormatTitle = existingDraft.title.includes("Workout -");
+
+      setHasCustomTitle(!isTimeOfDayTitle && !isOldDateFormatTitle);
+    }
+  }, [existingDraft, visible]);
+
+  // Helper to update title when transitioning from empty to having exercises
+  const maybeUpdateTitleOnFirstContent = useCallback(
+    (newDraft: DraftWorkout) => {
+      if (hasCustomTitle) return newDraft;
+
+      // Only update if we're transitioning from empty to having content
+      const hadContent =
+        (draft?.exercises?.length || 0) > 0 ||
+        (draft?.cardioSessions?.length || 0) > 0;
+      const willHaveContent =
+        newDraft.exercises.length > 0 || newDraft.cardioSessions.length > 0;
+
+      if (!hadContent && willHaveContent) {
+        // First content added - upgrade from time-of-day to pattern
+        const newTitle = generatePatternTitle(newDraft);
+        return {
+          ...newDraft,
+          title: newTitle,
+        };
+      }
+
+      return newDraft;
+    },
+    [hasCustomTitle, draft, generatePatternTitle]
+  );
+
   // Auto-save draft on changes (debounced)
   useEffect(() => {
     if (!draft || !visible || isDiscarding) return;
@@ -162,27 +247,33 @@ export default function DraftWorkoutBuilder({
     });
   }, []);
 
-  const addExercise = useCallback((exercise: Exercise) => {
-    setDraft((currentDraft) => {
-      if (!currentDraft) return currentDraft;
+  const addExercise = useCallback(
+    (exercise: Exercise) => {
+      setDraft((currentDraft) => {
+        if (!currentDraft) return currentDraft;
 
-      const newExercise: WorkoutExercise = {
-        id: `exercise_${Date.now()}`,
-        exerciseId: exercise.id,
-        exerciseName: exercise.name,
-        sets: [],
-        order: currentDraft.exercises.length,
-      };
+        const newExercise: WorkoutExercise = {
+          id: `exercise_${Date.now()}`,
+          exerciseId: exercise.id,
+          exerciseName: exercise.name,
+          sets: [],
+          order: currentDraft.exercises.length,
+        };
 
-      return {
-        ...currentDraft,
-        exercises: [...currentDraft.exercises, newExercise],
-        lastModified: new Date().toISOString(),
-      };
-    });
+        const updatedDraft = {
+          ...currentDraft,
+          exercises: [...currentDraft.exercises, newExercise],
+          lastModified: new Date().toISOString(),
+        };
 
-    setShowExerciseSelector(false);
-  }, []);
+        // Maybe update title when adding first content
+        return maybeUpdateTitleOnFirstContent(updatedDraft);
+      });
+
+      setShowExerciseSelector(false);
+    },
+    [maybeUpdateTitleOnFirstContent]
+  );
 
   const updateExercise = useCallback(
     (exerciseId: string, updates: Partial<WorkoutExercise>) => {
@@ -289,13 +380,16 @@ export default function DraftWorkoutBuilder({
         intensity: "medium",
       };
 
-      return {
+      const updatedDraft = {
         ...currentDraft,
         cardioSessions: [...currentDraft.cardioSessions, newSession],
         lastModified: new Date().toISOString(),
       };
+
+      // Maybe update title when adding first content
+      return maybeUpdateTitleOnFirstContent(updatedDraft);
     });
-  }, []);
+  }, [maybeUpdateTitleOnFirstContent]);
 
   const updateCardioSession = useCallback(
     (sessionId: string, updates: Partial<CardioSession>) => {
@@ -357,9 +451,15 @@ export default function DraftWorkoutBuilder({
     try {
       setSaving(true);
 
+      // Stage 3: Finalize title before saving (only if user never edited it)
+      let finalTitle = draft.title;
+      if (!hasCustomTitle) {
+        finalTitle = generatePatternTitle(draft);
+      }
+
       // Convert draft to workout format
       const workout = {
-        title: draft.title,
+        title: finalTitle,
         date: draft.date,
         exercises: draft.exercises,
         cardioSessions: draft.cardioSessions,
@@ -375,6 +475,7 @@ export default function DraftWorkoutBuilder({
       onWorkoutSaved();
       onClose();
       setDraft(null);
+      setHasCustomTitle(false); // Reset title state
     } catch (error) {
       console.error("Error saving workout:", error);
       Alert.alert("Error", "Failed to save workout");
@@ -406,6 +507,7 @@ export default function DraftWorkoutBuilder({
     setIsDiscarding(true);
     await AsyncStorage.removeItem(DRAFT_STORAGE_KEY);
     setDraft(null);
+    setHasCustomTitle(false); // Reset title state
     if (onDraftUpdated) {
       onDraftUpdated();
     }
@@ -421,6 +523,7 @@ export default function DraftWorkoutBuilder({
       // If empty draft, remove it from storage and close
       setIsDiscarding(true);
       await AsyncStorage.removeItem(DRAFT_STORAGE_KEY);
+      setHasCustomTitle(false); // Reset title state
       if (onDraftUpdated) {
         onDraftUpdated();
       }
@@ -471,7 +574,10 @@ export default function DraftWorkoutBuilder({
               <TextInput
                 style={styles.titleInput}
                 value={draft.title || ""}
-                onChangeText={(text) => updateDraft({ title: text })}
+                onChangeText={(text) => {
+                  updateDraft({ title: text });
+                  setHasCustomTitle(true); // Mark as manually edited
+                }}
                 placeholder="Enter workout title"
                 placeholderTextColor="#888"
               />
@@ -699,7 +805,7 @@ interface ExerciseCardProps {
   onRemoveSet: (setId: string) => void;
 }
 
-function ExerciseCard({
+const ExerciseCard = React.memo(function ExerciseCard({
   exercise,
   exerciseData,
   onUpdate,
@@ -773,7 +879,7 @@ function ExerciseCard({
       </TouchableOpacity>
     </View>
   );
-}
+});
 
 // Cardio Card Component
 interface CardioCardProps {
@@ -782,7 +888,11 @@ interface CardioCardProps {
   onRemove: () => void;
 }
 
-function CardioCard({ session, onUpdate, onRemove }: CardioCardProps) {
+const CardioCard = React.memo(function CardioCard({
+  session,
+  onUpdate,
+  onRemove,
+}: CardioCardProps) {
   const [showTypePicker, setShowTypePicker] = useState(false);
 
   const cardioTypes: { value: CardioSession["type"]; label: string }[] = [
@@ -894,7 +1004,7 @@ function CardioCard({ session, onUpdate, onRemove }: CardioCardProps) {
       </Modal>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
